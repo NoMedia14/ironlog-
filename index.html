@@ -410,7 +410,7 @@
     <button class="tab" data-tab="plans" onclick="showTab('plans',this)">📌 PLÄNE</button>
     <button class="tab" data-tab="stats" onclick="showTab('stats',this)">📊 STATS</button>
     <button class="tab" data-tab="weight" onclick="showTab('weight',this)">⚖️ GEWICHT</button>
-    <button class="tab" data-tab="macros" onclick="showTab('macros',this)">🥗 MAKROS</button>
+    <button class="tab" data-tab="macros" onclick="showTab('macros',this)">🥗 KAL & MAKROS</button>
     <button class="tab" id="bp-tab" data-tab="bp" onclick="showTab('bp',this)">❤️ BLUTDRUCK</button>
     <button class="tab" id="sleep-tab" data-tab="sleep" onclick="showTab('sleep',this)">😴 SCHLAF</button>
     <button class="tab" id="habits-tab" data-tab="habits" onclick="showTab('habits',this)">✅ HABITS</button>
@@ -718,7 +718,8 @@
         <div class="macro-row">
           <label class="macro-label">Aktivität</label>
           <select class="macro-select" id="mc-aktivitaet" onchange="calcMacros()">
-            <option value="1.2">Wenig Aktivität (Bürojob, kaum Sport)</option>
+            <option value="1.0">Krank / Bettruhe</option>
+            <option value="1.2">Wenig Aktivität</option>
             <option value="1.4">Normale Aktivität</option>
             <option value="1.6">Erhöhte Aktivität</option>
             <option value="1.8">Sehr hohe Aktivität</option>
@@ -1455,7 +1456,7 @@ const TAB_SETTINGS_BASE=[
   {id:'sleep',   emoji:'😴', label:'Schlaf',   default:true},
   {id:'habits',  emoji:'✅', label:'Habits',   default:true},
   {id:'mood',    emoji:'😊', label:'Stimmung', default:true},
-  {id:'macros',  emoji:'🥗', label:'Makros',   default:true},
+  {id:'macros',  emoji:'🥗', label:'Kal & Makros', default:true},
 ];
 
 function getTabOrder(){
@@ -2075,7 +2076,7 @@ function addExercise(name='',defSets=3){
   <button class="btn btn-ghost btn-xs" style="width:100%;margin-top:6px;" onclick="addSet(${id})">+ Set</button>
   <div class="field" style="margin-top:10px;"><label>Bemerkung</label><textarea id="ex-r-${id}" placeholder="Optional…" style="min-height:44px;resize:vertical;"></textarea></div>`;
   g('ex-container').appendChild(d);
-  for(let i=0;i<(defSets||1);i++) addSet(id);
+  for(let i=0;i<defSets;i++) addSet(id);
 }
 function addSet(exId){
   if(!setCounters[exId]) setCounters[exId]=0;
