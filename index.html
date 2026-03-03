@@ -262,6 +262,8 @@
     .macro-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:12px;font-weight:600;padding:10px 12px;outline:none;font-family:'DM Sans',sans-serif;width:100%;max-width:220px;}
     .macro-toggle{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;font-family:'DM Sans',sans-serif;}
     .macro-toggle.active{background:var(--accent3);color:#0a0a0f;border-color:var(--accent3);}
+    .macro-toggle.female.active{background:#ff6eb4 !important;color:#fff !important;border-color:#ff6eb4 !important;}
+    .macro-toggle.active.female{background:#ff6eb4;color:#fff;border-color:#ff6eb4;}
     .macro-toggle3{padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;font-family:'DM Sans',sans-serif;}
     .macro-toggle3.active{background:var(--accent);color:#0a0a0f;border-color:var(--accent);}
     .macro-result-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
@@ -286,6 +288,7 @@
     .macro-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:12px;font-weight:600;padding:10px 12px;outline:none;font-family:'DM Sans',sans-serif;width:100%;max-width:220px;}
     .macro-toggle{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;font-family:'DM Sans',sans-serif;}
     .macro-toggle.active{background:var(--accent3);color:#0a0a0f;border-color:var(--accent3);}
+    .macro-toggle.active.female{background:#ff6eb4;color:#fff;border-color:#ff6eb4;}
     .macro-toggle3{padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;font-family:'DM Sans',sans-serif;}
     .macro-toggle3.active{background:var(--accent);color:#0a0a0f;border-color:var(--accent);}
     .macro-result-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
@@ -324,6 +327,7 @@
     .macro-select{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:12px;font-weight:600;padding:10px 12px;outline:none;font-family:'DM Sans',sans-serif;width:100%;max-width:220px;}
     .macro-toggle{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;font-family:'DM Sans',sans-serif;}
     .macro-toggle.active{background:var(--accent3);color:#0a0a0f;border-color:var(--accent3);}
+    .macro-toggle.active.female{background:#ff6eb4;color:#fff;border-color:#ff6eb4;}
     .macro-toggle3{padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;font-family:'DM Sans',sans-serif;}
     .macro-toggle3.active{background:var(--accent);color:#0a0a0f;border-color:var(--accent);}
     .macro-result-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
@@ -465,10 +469,17 @@
     <div id="view-stats" class="view">
       <div class="stats-grid" id="stats-grid"></div>
       <div class="chart-wrap">
-        <div class="chart-title">FORTSCHRITT — MAX. GEWICHT</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div class="chart-title" style="margin-bottom:0;">FORTSCHRITT</div>
+          <div style="display:flex;gap:6px;">
+            <button class="fbtn stat-mode active" id="smode-kg" onclick="setStatMode('kg',this)">Max. KG</button>
+            <button class="fbtn stat-mode" id="smode-vol" onclick="setStatMode('vol',this)">Volumen</button>
+          </div>
+        </div>
         <div class="field" style="margin-bottom:12px;"><label>Übung</label>
           <select id="chart-ex-sel" onchange="updateProgressChart()"></select></div>
         <canvas id="progressChart" height="200"></canvas>
+        <div id="stats-last3" style="margin-top:14px;"></div>
       </div>
       <div class="chart-wrap"><div class="chart-title">TRAININGS PRO WOCHE</div>
         <canvas id="weekChart" height="160"></canvas></div>
@@ -680,7 +691,7 @@
           <label class="macro-label">Geschlecht</label>
           <div style="display:flex;gap:8px;">
             <button class="macro-toggle active" id="mg-m" onclick="setMacroGender('m')">♂ Männlich</button>
-            <button class="macro-toggle" id="mg-f" onclick="setMacroGender('f')">♀ Weiblich</button>
+            <button class="macro-toggle female" id="mg-f" onclick="setMacroGender('f')">♀ Weiblich</button>
           </div>
         </div>
 
@@ -707,6 +718,7 @@
         <div class="macro-row">
           <label class="macro-label">Aktivität</label>
           <select class="macro-select" id="mc-aktivitaet" onchange="calcMacros()">
+            <option value="1.2">Wenig Aktivität (Bürojob, kaum Sport)</option>
             <option value="1.4">Normale Aktivität</option>
             <option value="1.6">Erhöhte Aktivität</option>
             <option value="1.8">Sehr hohe Aktivität</option>
@@ -861,6 +873,7 @@
       <div><div class="modal-title" id="d-title"></div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="d-sub"></div></div>
       <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="editCurrentSession()">✏️ Bearbeiten</button>
         <button class="btn btn-danger btn-sm" onclick="deleteCurrentSession()">🗑 Löschen</button>
         <button class="close-btn" onclick="closeModal('modal-detail')">✕</button>
       </div>
@@ -1900,7 +1913,7 @@ function toggleTimerMin(){ timerMinimized=!timerMinimized; const sec=g('timer-se
 // ── LOG ──
 function populateLogPlanSelect(){ const sel=g('log-plan-sel'); sel.innerHTML='<option value="">— Plan wählen —</option>'; plans.forEach(p=>sel.innerHTML+=`<option value="${p.id}">${p.name}</option>`); }
 function startSelectedPlan(){ const pid=g('log-plan-sel').value; if(!pid){showToast('Bitte Plan auswählen.',true);return;} const plan=plans.find(p=>p.id===pid); if(plan) startWorkout(plan); }
-function openBlankSession(){ exCounter=0;setCounters={}; g('s-date').value=today(); g('s-name').value=''; g('ex-container').innerHTML=''; addExercise(); g('modal-session').classList.add('open'); }
+function openBlankSession(){ _editingSessionId=null; exCounter=0;setCounters={}; g('s-date').value=today(); g('s-name').value=''; g('ex-container').innerHTML=''; addExercise(); g('modal-session').classList.add('open'); }
 
 // ── ACTIVE WORKOUT ──
 function startWorkout(plan){
@@ -2019,11 +2032,42 @@ function renderLog(){
 }
 
 // ── SESSION FORM ──
+function getLastExerciseData(name) {
+  // Find most recent session (excluding current editing) containing this exercise name (exact match)
+  const lower = name.trim().toLowerCase();
+  const skipId = _editingSessionId;
+  const sorted = [...sessions].filter(s => s.id !== skipId).sort((a,b) => b.date.localeCompare(a.date));
+  for (const s of sorted) {
+    const ex = (s.exercises||[]).find(e => e.name?.trim().toLowerCase() === lower);
+    if (ex && ex.sets?.length) {
+      const maxKg = Math.max(...ex.sets.map(st => parseFloat(st.kg)||0));
+      const sets = ex.sets.length;
+      const reps = ex.sets.map(st => st.reps||'?').join('/');
+      const date = fmtD(s.date, {day:'2-digit', month:'short'});
+      return { summary: `${date} · ${sets} Sets · ${reps} Reps · max ${maxKg}kg`, maxKg, sets };
+    }
+  }
+  return null;
+}
+
+function updateLastHint(id, name) {
+  const el = g('ex-hint-'+id); if(!el) return;
+  const data = getLastExerciseData(name);
+  el.textContent = data ? data.summary : '';
+}
+
 function addExercise(name='',defSets=3){
   const id=++exCounter;
   const d=document.createElement('div'); d.className='exercise-block'; d.id='ex-'+id;
+  // Last session data for this exercise (by name)
+  const lastEx = name ? getLastExerciseData(name) : null;
+  const lastHint = lastEx ? `<div style="font-size:10px;color:var(--accent3);margin-top:3px;">Letztes Mal: ${lastEx.summary}</div>` : '';
+
   d.innerHTML=`<div class="exercise-name-row">
-    <input type="text" placeholder="Übungsname" id="ex-n-${id}" value="${name}">
+    <div style="flex:1;">
+      <input type="text" placeholder="Übungsname" id="ex-n-${id}" value="${name}" oninput="updateLastHint(${id},this.value)">
+      <div id="ex-hint-${id}" style="font-size:10px;color:var(--accent3);margin-top:3px;min-height:14px;">${lastEx?lastEx.summary:''}</div>
+    </div>
     <button class="btn btn-danger btn-sm" onclick="document.getElementById('ex-${id}').remove()">✕</button>
   </div>
   <div class="sets-header"><div>#</div><div>KG</div><div>REPS</div><div>PAUSE</div><div>BEM.</div><div></div></div>
@@ -2045,6 +2089,8 @@ function addSet(exId){
     <button class="del-set" onclick="document.getElementById('sr-${exId}-${sn}').remove()">✕</button>`;
   g('sets-'+exId).appendChild(d);
 }
+let _editingSessionId = null;
+
 async function saveSession(){
   const date=g('s-date').value,name=g('s-name').value.trim();
   if(!date){alert('Bitte Datum angeben.');return;}
@@ -2062,9 +2108,16 @@ async function saveSession(){
   });
   if(!exercises.length){alert('Mindestens eine Übung.');return;}
   setSyncState('syncing');
-  const{error}=await sb.from('sessions').insert({user_id:currentUser.id,date,name,exercises});
-  if(error){showToast('Fehler: '+error.message,true);setSyncState('error');console.error('Session insert error:',error);return;}
-  await loadAllData(); closeModal('modal-session'); renderLog(); if(activeTab==='stats')renderStats(); showToast('Einheit gespeichert!');
+  let error;
+  if(_editingSessionId){
+    ({error}=await sb.from('sessions').update({date,name,exercises}).eq('id',_editingSessionId).eq('user_id',currentUser.id));
+  } else {
+    ({error}=await sb.from('sessions').insert({user_id:currentUser.id,date,name,exercises}));
+  }
+  if(error){showToast('Fehler: '+error.message,true);setSyncState('error');return;}
+  _editingSessionId=null;
+  await loadAllData(); closeModal('modal-session'); renderLog(); if(activeTab==='stats')renderStats();
+  showToast(_editingSessionId?'Einheit aktualisiert!':'Einheit gespeichert!');
 }
 
 // ── DETAIL ──
@@ -2086,6 +2139,54 @@ function openDetail(id){
   </div><div class="divider"></div>`).join('');
   g('modal-detail').classList.add('open');
 }
+function editCurrentSession(){
+  const s=sessions.find(x=>x.id===currentSessionId); if(!s)return;
+  _editingSessionId=s.id;
+  exCounter=0; setCounters={};
+  g('s-date').value=s.date;
+  g('s-name').value=s.name||'';
+  g('ex-container').innerHTML='';
+  (s.exercises||[]).forEach(ex=>{
+    addExercise(ex.name,0);
+    const exId=exCounter;
+    (ex.sets||[]).forEach(st=>{
+      addSet(exId);
+      const sn=setCounters[exId];
+      if(g(`kg-${exId}-${sn}`)) g(`kg-${exId}-${sn}`).value=st.kg||'';
+      if(g(`rp-${exId}-${sn}`)) g(`rp-${exId}-${sn}`).value=st.reps||'';
+      if(g(`pa-${exId}-${sn}`)) g(`pa-${exId}-${sn}`).value=st.pause||'';
+      if(g(`bm-${exId}-${sn}`)) g(`bm-${exId}-${sn}`).value=st.remark||'';
+    });
+    if(g('ex-r-'+exId)) g('ex-r-'+exId).value=ex.remark||'';
+  });
+  closeModal('modal-detail');
+  g('modal-session').classList.add('open');
+}
+
+function editCurrentSession(){
+  const s=sessions.find(x=>x.id===currentSessionId); if(!s)return;
+  _editingSessionId=s.id;
+  exCounter=0; setCounters={};
+  g('s-date').value=s.date;
+  g('s-name').value=s.name||'';
+  g('ex-container').innerHTML='';
+  (s.exercises||[]).forEach(ex=>{
+    addExercise(ex.name,0);
+    const exId=exCounter;
+    (ex.sets||[]).forEach(st=>{
+      addSet(exId);
+      const sn=setCounters[exId];
+      if(g(`kg-${exId}-${sn}`)) g(`kg-${exId}-${sn}`).value=st.kg||'';
+      if(g(`rp-${exId}-${sn}`)) g(`rp-${exId}-${sn}`).value=st.reps||'';
+      if(g(`pa-${exId}-${sn}`)) g(`pa-${exId}-${sn}`).value=st.pause||'';
+      if(g(`bm-${exId}-${sn}`)) g(`bm-${exId}-${sn}`).value=st.remark||'';
+    });
+    if(g('ex-r-'+exId)) g('ex-r-'+exId).value=ex.remark||'';
+  });
+  closeModal('modal-detail');
+  g('modal-session').classList.add('open');
+}
+
 async function deleteCurrentSession(){
   if(!confirm('Einheit wirklich löschen?'))return;
   setSyncState('syncing');
@@ -2269,14 +2370,63 @@ function renderStats(){
   sel.innerHTML=names.length?names.map(n=>`<option value="${n}">${n}</option>`).join(''):'<option>Keine Daten</option>';
   updateProgressChart(); renderWeekChart();
 }
+let _statMode = 'kg';
+function setStatMode(mode, btn) {
+  _statMode = mode;
+  document.querySelectorAll('.stat-mode').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateProgressChart();
+}
+
 function updateProgressChart(){
-  const exName=g('chart-ex-sel').value; const pts=[];
-  sessions.forEach(s=>(s.exercises||[]).forEach(ex=>{
-    if(ex.name===exName){ const max=Math.max(...(ex.sets||[]).map(st=>parseFloat(st.kg)||0)); if(max>0) pts.push({date:s.date,kg:max}); }
+  const exName = g('chart-ex-sel').value;
+  const pts = [];
+  const allSessions = [...sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  allSessions.forEach(s=>(s.exercises||[]).forEach(ex=>{
+    if(ex.name===exName){
+      const sets = ex.sets||[];
+      const maxKg = Math.max(...sets.map(st=>parseFloat(st.kg)||0));
+      const vol = sets.reduce((a,st)=>{
+        const kg=parseFloat(st.kg)||0, rp=parseFloat(st.reps)||0;
+        return a + kg*rp;
+      },0);
+      if(_statMode==='kg'&&maxKg>0) pts.push({date:s.date,val:maxKg,ex,s});
+      if(_statMode==='vol'&&vol>0) pts.push({date:s.date,val:Math.round(vol),ex,s});
+    }
   }));
-  pts.sort((a,b)=>a.date.localeCompare(b.date));
   if(pChartI) pChartI.destroy();
-  pChartI=new Chart(g('progressChart'),{type:'line',data:{labels:pts.map(d=>fmtShort(d.date)),datasets:[{label:'Max kg',data:pts.map(d=>d.kg),borderColor:'#e8ff47',backgroundColor:'rgba(232,255,71,.08)',pointBackgroundColor:'#e8ff47',pointRadius:5,tension:.3,fill:true}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  const color = _statMode==='kg'?'#e8ff47':'#47c8ff';
+  const colorBg = _statMode==='kg'?'rgba(232,255,71,.08)':'rgba(71,200,255,.08)';
+  const label = _statMode==='kg'?'Max kg':'Volumen (kg×Reps)';
+  pChartI=new Chart(g('progressChart'),{type:'line',data:{
+    labels:pts.map(d=>fmtShort(d.date)),
+    datasets:[{label,data:pts.map(d=>d.val),borderColor:color,backgroundColor:colorBg,pointBackgroundColor:color,pointRadius:5,tension:.3,fill:true}]
+  },options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+
+  // ── Last 3 sessions table ──
+  const last3 = pts.slice(-3).reverse();
+  const tbl = g('stats-last3');
+  if(!tbl||!last3.length){if(tbl)tbl.innerHTML='';return;}
+  const rows = last3.map(p=>{
+    const sets=p.ex.sets||[];
+    const nSets=sets.length;
+    const repsArr=sets.map(st=>parseInt(st.reps)||0);
+    const repsStr=repsArr.join('/');
+    const maxKg=Math.max(...sets.map(st=>parseFloat(st.kg)||0));
+    const vol=Math.round(sets.reduce((a,st)=>a+(parseFloat(st.kg)||0)*(parseFloat(st.reps)||0),0));
+    return`<tr>
+      <td>${fmtD(p.date,{day:'2-digit',month:'short'})}</td>
+      <td style="text-align:center;">${nSets}</td>
+      <td style="text-align:center;">${repsStr}</td>
+      <td style="text-align:center;font-weight:700;">${maxKg} kg</td>
+      <td style="text-align:center;color:var(--accent3);">${vol}</td>
+    </tr>`;
+  }).join('');
+  tbl.innerHTML=`<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;letter-spacing:1px;">LETZTE 3 TRAININGS</div>
+    <table class="bp-table"><thead><tr>
+      <th>Datum</th><th style="text-align:center;">Sets</th><th style="text-align:center;">Reps</th>
+      <th style="text-align:center;">Max KG</th><th style="text-align:center;">Volumen</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
 }
 function renderWeekChart(){
   const wc={}; sessions.forEach(s=>{const w=weekLabel(s.date);wc[w]=(wc[w]||0)+1;});
@@ -3537,6 +3687,9 @@ function setMacroGender(gender) {
   _macroGender = gender;
   g('mg-m').classList.toggle('active', gender === 'm');
   g('mg-f').classList.toggle('active', gender === 'f');
+  // Female stays pink, male stays blue
+  g('mg-m').classList.remove('female');
+  g('mg-f').classList.add('female');
   calcMacros();
 }
 
