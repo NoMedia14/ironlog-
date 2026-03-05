@@ -1451,7 +1451,10 @@ async function loadAllData(){
       sb.from('habit_logs').select('*').eq('user_id',uid).order('date',{ascending:false}),
       sb.from('shares').select('*').eq('owner_id',uid)
     ]);
-    sessions=s.data||[]; plans=p.data||[]; weightEntries=w.data||[]; bpEntries=b.data||[];
+    sessions=(s.data||[]).map(sess=>({
+      ...sess,
+      exercises: typeof sess.exercises === 'string' ? JSON.parse(sess.exercises||'[]') : (sess.exercises||[])
+    })); plans=p.data||[]; weightEntries=w.data||[]; bpEntries=b.data||[];
     sleepEntries=sl.data||[]; moodEntries=md.data||[]; habits=hb.data||[]; habitLogs=hl.data||[]; shares=sh.data||[];
     setSyncState('ok');
   }catch(e){ setSyncState('error'); showToast('Sync-Fehler',true); }
@@ -1933,6 +1936,7 @@ function startWorkout(plan){
   // Build lastExMap by exercise name across ALL sessions (most recent wins)
   // This way renaming a plan doesn't break the previous weight lookup
   const lastExMap = {};
+  console.log('[startWorkout] sessions:', sessions.length, sessions[0]);
   const sorted = [...sessions].sort((a,b) => b.date.localeCompare(a.date));
   sorted.forEach(s => {
     (s.exercises||[]).forEach(ex => {
