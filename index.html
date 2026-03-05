@@ -1930,12 +1930,16 @@ function startWorkout(plan){
   awSetCounters={};
   const exercises=(plan.exercises||[]).map((ex,i)=>({id:i,name:ex.name,defaultSets:ex.defaultSets||3,defaultReps:ex.defaultReps||0}));
   
-  // Find last session that used this plan (same name)
-  const lastSession = sessions.find(s => s.name === plan.name);
+  // Build lastExMap by exercise name across ALL sessions (most recent wins)
+  // This way renaming a plan doesn't break the previous weight lookup
   const lastExMap = {};
-  if(lastSession){
-    (lastSession.exercises||[]).forEach(ex=>{ lastExMap[ex.name.toLowerCase()]=ex; });
-  }
+  const sorted = [...sessions].sort((a,b) => b.date.localeCompare(a.date));
+  sorted.forEach(s => {
+    (s.exercises||[]).forEach(ex => {
+      const key = ex.name?.toLowerCase();
+      if(key && !lastExMap[key]) lastExMap[key] = ex; // first = most recent
+    });
+  });
   
   const wrap=g('active-workout-wrap'); wrap.style.display='block';
   let exHtml='';
