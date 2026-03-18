@@ -105,6 +105,11 @@
     .set-row{display:grid;grid-template-columns:28px 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:9px;}
     .set-num{width:28px;height:28px;background:var(--surface);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;}
     .set-row input{padding:11px 4px;font-size:14px;font-weight:600;text-align:center;}
+    /* Active workout inputs: yellow placeholder = last value */
+    .aw-input::placeholder{color:rgba(232,255,71,0.45);}
+    .aw-input{transition:background .2s,color .2s;}
+    .aw-input.has-value{background:rgba(71,255,184,0.08);color:var(--accent4);}
+    .aw-input.has-last::placeholder{color:rgba(232,255,71,0.45);}
     .del-set{width:28px;height:28px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
     .del-set:hover{border-color:var(--accent2);color:var(--accent2);}
     .exercise-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
@@ -481,8 +486,7 @@
         <canvas id="progressChart" height="200"></canvas>
         <div id="stats-last3" style="margin-top:14px;"></div>
       </div>
-      <div class="chart-wrap"><div class="chart-title">TRAININGS PRO WOCHE</div>
-        <canvas id="weekChart" height="160"></canvas></div>
+
     </div>
 
     <!-- WEIGHT -->
@@ -1936,7 +1940,6 @@ function startWorkout(plan){
   // Build lastExMap by exercise name across ALL sessions (most recent wins)
   // This way renaming a plan doesn't break the previous weight lookup
   const lastExMap = {};
-  console.log('[startWorkout] sessions:', sessions.length, sessions[0]);
   const sorted = [...sessions].sort((a,b) => b.date.localeCompare(a.date));
   sorted.forEach(s => {
     (s.exercises||[]).forEach(ex => {
@@ -1951,34 +1954,27 @@ function startWorkout(plan){
     const lastEx = lastExMap[ex.name.toLowerCase()];
     const lastSets = lastEx?.sets||[];
     
-    // Build "last session" hint
-    let lastHint='';
-    if(lastSets.length){
-      const parts = lastSets.map((s,i)=>`Set ${i+1}: ${s.kg||'—'}kg × ${s.reps||'—'}`).join(' · ');
-      lastHint=`<div style="font-size:11px;color:var(--accent3);background:rgba(71,200,255,.08);border:1px solid rgba(71,200,255,.2);border-radius:8px;padding:6px 10px;margin-bottom:8px;">
-        <span style="font-weight:700;letter-spacing:.5px;">LETZTES MAL:</span> ${parts}
-      </div>`;
-    }
+    // No separate hint box - last values shown as yellow-tinted placeholder inputs
     
     let setsHtml='';
     for(let si=0;si<ex.defaultSets;si++){
-      // Pre-fill with last session values as placeholders
       const lastKg = lastSets[si]?.kg||'';
       const lastRp = lastSets[si]?.reps||(ex.defaultReps||'');
+      const lastRemark = lastEx?.remark||'';
+      // Use data-last attributes for JS-driven placeholder styling
       setsHtml+=`<div class="set-row" id="aws-${ei}-${si}">
         <div class="set-num">${si+1}</div>
-        <input type="number" placeholder="${lastRp||'—'}" id="aw-rp-${ei}-${si}" value="">
-        <input type="number" placeholder="${lastKg||'—'}" id="aw-kg-${ei}-${si}" min="0" step="0.5">
+        <input type="number" class="aw-input" data-last="${lastRp}" placeholder="${lastRp||'—'}" id="aw-rp-${ei}-${si}" value="" oninput="awInputChanged(this)">
+        <input type="number" class="aw-input" data-last="${lastKg}" placeholder="${lastKg||'—'}" id="aw-kg-${ei}-${si}" min="0" step="0.5" oninput="awInputChanged(this)">
         <button class="del-set" onclick="document.getElementById('aws-${ei}-${si}').remove()">✕</button>
       </div>`;
     }
     exHtml+=`<div class="exercise-block" id="aw-ex-${ei}">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--accent3);margin-bottom:8px;">${ex.name}</div>
-      ${lastHint}
       <div class="sets-header"><div>#</div><div>REPS</div><div>KG</div><div></div></div>
       <div id="aw-sets-${ei}">${setsHtml}</div>
       <button class="btn btn-ghost btn-xs" style="width:100%;margin-top:6px;" onclick="addAWSet(${ei},${ex.defaultSets},${ex.defaultReps||0})">+ Set</button>
-      <div class="field" style="margin-top:10px;"><label>Bemerkung</label><textarea id="aw-rmk-${ei}" placeholder="Optional…" style="min-height:44px;resize:vertical;font-size:13px;"></textarea></div>
+      <div class="field" style="margin-top:10px;"><label>Bemerkung</label><textarea id="aw-rmk-${ei}" placeholder="${lastEx?.remark||'Optional…'}" style="min-height:44px;resize:vertical;font-size:13px;" class="aw-input" data-last="${lastEx?.remark||''}" oninput="awInputChanged(this)"></textarea></div>
     </div>`;
   });
   wrap.innerHTML=`<div class="active-workout">
@@ -2001,14 +1997,15 @@ function startWorkout(plan){
     </div>
   </div>`;
   wrap.scrollIntoView({behavior:'smooth'});
+  setTimeout(initAWInputStyles, 50);
 }
 function addAWSet(ei,startCount,defReps){
   if(!awSetCounters[ei]) awSetCounters[ei]=startCount||3;
   const si=awSetCounters[ei]++;
   const d=document.createElement('div'); d.className='set-row'; d.id=`aws-${ei}-${si}`;
   d.innerHTML=`<div class="set-num">${si+1}</div>
-    <input type="number" placeholder="—" id="aw-rp-${ei}-${si}" value="${defReps||''}">
-    <input type="number" placeholder="—" id="aw-kg-${ei}-${si}" min="0" step="0.5">
+    <input type="number" class="aw-input" placeholder="—" id="aw-rp-${ei}-${si}" value="${defReps||''}" oninput="awInputChanged(this)">
+    <input type="number" class="aw-input" placeholder="—" id="aw-kg-${ei}-${si}" min="0" step="0.5" oninput="awInputChanged(this)">
     <button class="del-set" onclick="document.getElementById('aws-${ei}-${si}').remove()">✕</button>`;
   g('aw-sets-'+ei)?.appendChild(d);
 }
@@ -2040,6 +2037,20 @@ function updateAWExtraHint(ei, name) {
   const el = g('aw-xhint-'+ei); if(!el) return;
   const data = getLastExerciseData(name);
   el.textContent = data ? data.summary : '';
+}
+
+function awInputChanged(el) {
+  const hasVal = el.value !== '';
+  el.classList.toggle('has-value', hasVal);
+}
+
+function initAWInputStyles() {
+  // Apply initial placeholder tint if last value exists
+  document.querySelectorAll('.aw-input').forEach(el => {
+    const last = el.dataset.last;
+    if(last) el.classList.add('has-last');
+    if(el.value) el.classList.add('has-value');
+  });
 }
 
 function toggleAWMin(){ const b=g('aw-body'),a=g('aw-arrow'); const open=b.classList.toggle('open'); a.textContent=open?'▼':'▶'; }
@@ -2080,14 +2091,34 @@ function discardWorkout(){ if(!confirm('Training verwerfen?'))return; g('active-
 function renderLog(){
   const el=g('log-list');
   if(!sessions.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🏋️</div><div class="empty-text">Noch keine Einheiten.</div></div>`;return;}
-  el.innerHTML=sessions.map(s=>{
-    const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
-    return`<div class="session-card" onclick="openDetail('${s.id}')">
-      <div class="session-date">${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</div>
-      <div class="session-name">${s.name||'Training'}</div>
-      <div class="session-meta"><span>💪 ${ec} Übung${ec!==1?'en':''}</span><span>📋 ${sc} Sets</span></div>
-    </div>`;
-  }).join('');
+  // Group by month
+  const now = new Date();
+  const groups = {};
+  sessions.forEach(s=>{
+    const d = new Date(s.date);
+    const diffMonths = (now.getFullYear()-d.getFullYear())*12 + (now.getMonth()-d.getMonth());
+    let key;
+    if(diffMonths < 12) {
+      key = fmtD(s.date,{month:'long',year:'numeric'}); // "März 2025"
+    } else {
+      key = String(d.getFullYear()); // "2024"
+    }
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(s);
+  });
+  let html='';
+  Object.keys(groups).forEach(month=>{
+    html+=`<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;padding:8px 2px 6px;">${month}</div>`;
+    html+=groups[month].map(s=>{
+      const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
+      return`<div class="session-card" onclick="openDetail('${s.id}')">
+        <div class="session-date">${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short'})}</div>
+        <div class="session-name">${s.name||'Training'}</div>
+        <div class="session-meta"><span>💪 ${ec} Übung${ec!==1?'en':''}</span><span>📋 ${sc} Sets</span></div>
+      </div>`;
+    }).join('');
+  });
+  el.innerHTML=html;
 }
 
 // ── SESSION FORM ──
@@ -2421,7 +2452,7 @@ function renderStats(){
   const names=[...new Set(allEx.map(e=>e.name).filter(Boolean))].sort();
   const sel=g('chart-ex-sel');
   sel.innerHTML=names.length?names.map(n=>`<option value="${n}">${n}</option>`).join(''):'<option>Keine Daten</option>';
-  updateProgressChart(); renderWeekChart();
+  updateProgressChart();
 }
 let _statMode = 'kg';
 function setStatMode(mode, btn) {
