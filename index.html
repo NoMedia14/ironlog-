@@ -1727,6 +1727,7 @@ async function openSharedPerson(idx){
   if(categories.includes('bp')) tabDefs.push({id:'bp',label:'❤️ Blutdruck'});
   if(categories.includes('sleep')) tabDefs.push({id:'sleep',label:'😴 Schlaf'});
   if(categories.includes('mood')) tabDefs.push({id:'mood',label:'😊 Stimmung'});
+  if(categories.includes('log')&&!tabDefs.find(t=>t.id==='stats')) tabDefs.push({id:'stats',label:'📊 Stats'});
 
   const tabsEl=g('shared-subtabs');
   tabsEl.innerHTML=tabDefs.map((t,i)=>
@@ -1755,53 +1756,101 @@ function closeSharedDetail(){
   window._sharedData=null;
 }
 
+// shared time filter state
+let _sWTimeFilter='all', _sBPTimeFilter='all', _sStatMode='kg';
+
 function switchSharedTab(tabId, btn){
   g('shared-subtabs').querySelectorAll('button').forEach(b=>{b.style.background='transparent';b.style.color='var(--muted)';});
   if(btn){btn.style.background='var(--card)';btn.style.color='var(--accent)';}
   const d=window._sharedData||{};
   const el=g('shared-detail-content');
-  // Destroy any shared chart
   if(window._sharedCharts){Object.values(window._sharedCharts).forEach(c=>{try{c.destroy();}catch(e){}});window._sharedCharts={};}
 
+  // ── TRAINING (grouped by month) ──
   if(tabId==='log'){
-    if(!d.sessions||!d.sessions.length){el.innerHTML='<div class="empty"><div class="empty-text">Noch keine Einheiten.</div></div>';return;}
-    el.innerHTML=d.sessions.map(s=>{
-      const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
-      const exDetail=(s.exercises||[]).map(ex=>{
-        const setsStr=(ex.sets||[]).map((st,i)=>`<span style="display:inline-block;background:var(--surface);border-radius:5px;padding:2px 7px;margin:2px;font-size:11px;">${i+1}: ${st.kg||'—'}kg × ${st.reps||'—'}</span>`).join('');
-        return`<div style="margin-top:8px;"><div style="font-size:12px;font-weight:600;color:var(--accent3);margin-bottom:4px;">${ex.name}</div><div>${setsStr}</div>${ex.remark?`<div style="font-size:11px;color:var(--muted);margin-top:3px;">${ex.remark}</div>`:''}</div>`;
+    const sessions=(d.sessions||[]).map(sess=>({...sess,exercises:typeof sess.exercises==='string'?JSON.parse(sess.exercises||'[]'):(sess.exercises||[])}));
+    if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-text">Noch keine Einheiten.</div></div>';return;}
+    const now=new Date();
+    const groups={};
+    sessions.forEach(s=>{
+      const dd=new Date(s.date);
+      const diffM=(now.getFullYear()-dd.getFullYear())*12+(now.getMonth()-dd.getMonth());
+      const key=diffM<12?fmtD(s.date,{month:'long',year:'numeric'}):String(dd.getFullYear());
+      if(!groups[key])groups[key]=[];
+      groups[key].push(s);
+    });
+    let html='';
+    Object.keys(groups).forEach(month=>{
+      html+=`<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;padding:8px 2px 6px;">${month}</div>`;
+      html+=groups[month].map(s=>{
+        const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
+        const exDetail=(s.exercises||[]).map(ex=>{
+          const setsStr=(ex.sets||[]).map((st,i)=>`<span style="display:inline-block;background:var(--surface);border-radius:5px;padding:2px 7px;margin:2px;font-size:11px;">${i+1}: ${st.reps||'—'}×${st.kg||'—'}kg</span>`).join('');
+          return`<div style="margin-top:8px;"><div style="font-size:12px;font-weight:600;color:var(--accent3);margin-bottom:4px;">${ex.name}</div><div>${setsStr}</div>${ex.remark?`<div style="font-size:11px;color:var(--muted);margin-top:3px;">${ex.remark}</div>`:''}</div>`;
+        }).join('');
+        return`<div class="session-card" style="cursor:default;"><div class="session-date">${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short'})}</div><div class="session-name">${s.name||'Training'}</div><div class="session-meta"><span>💪 ${ec} Übungen</span><span>📋 ${sc} Sets</span></div><div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">${exDetail}</div></div>`;
       }).join('');
-      return`<div class="session-card" style="cursor:default;"><div class="session-date">${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</div><div class="session-name">${s.name||'Training'}</div><div class="session-meta"><span>💪 ${ec} Übungen</span><span>📋 ${sc} Sets</span></div><div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">${exDetail}</div></div>`;
-    }).join('');
+    });
+    el.innerHTML=html; return;
+  }
+
+  // ── STATS (Fortschritt wie eigene Stats) ──
+  if(tabId==='stats'){
+    const sessions=(d.sessions||[]).map(sess=>({...sess,exercises:typeof sess.exercises==='string'?JSON.parse(sess.exercises||'[]'):(sess.exercises||[])}));
+    if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-text">Noch keine Einheiten.</div></div>';return;}
+    const allEx=[...new Set(sessions.flatMap(s=>(s.exercises||[]).map(e=>e.name)).filter(Boolean))].sort();
+    el.innerHTML=`
+      <div class="chart-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div class="chart-title" style="margin-bottom:0;">FORTSCHRITT</div>
+          <div style="display:flex;gap:6px;">
+            <button class="fbtn stat-mode active" id="sshared-kg" onclick="setSharedStatMode('kg',this)">Max. KG</button>
+            <button class="fbtn stat-mode" id="sshared-vol" onclick="setSharedStatMode('vol',this)">Volumen</button>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:12px;"><label>Übung</label>
+          <select id="shared-ex-sel" onchange="updateSharedProgressChart()">
+            ${allEx.map(n=>`<option value="${n}">${n}</option>`).join('')}
+          </select>
+        </div>
+        <canvas id="shared-prog-chart" height="200"></canvas>
+        <div id="shared-last3" style="margin-top:14px;"></div>
+      </div>`;
+    setTimeout(()=>updateSharedProgressChart(),50);
     return;
   }
 
+  // ── GEWICHT (mit Zeitfilter wie eigene Ansicht) ──
   if(tabId==='weight'){
     if(!d.weight||!d.weight.length){el.innerHTML='<div class="empty"><div class="empty-text">Noch keine Messungen.</div></div>';return;}
-    const sorted=[...d.weight].sort((a,b)=>a.date.localeCompare(b.date));
-    const wVals=sorted.map(e=>e.weight?parseFloat(e.weight):null);
-    const maW=calcMA(wVals,7);
     el.innerHTML=`
-      <div class="chart-wrap"><div class="chart-title" style="margin-bottom:10px;">VERLAUF</div>
-        <canvas id="shared-w-chart" height="200"></canvas></div>
+      <div class="chart-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div class="chart-title" style="margin-bottom:0;">VERLAUF</div>
+          <div style="display:flex;gap:4px;">
+            <button class="fbtn swtf" onclick="setSharedWFilter('1m',this)">1M</button>
+            <button class="fbtn swtf" onclick="setSharedWFilter('3m',this)">3M</button>
+            <button class="fbtn swtf" onclick="setSharedWFilter('6m',this)">6M</button>
+            <button class="fbtn swtf" onclick="setSharedWFilter('1y',this)">1J</button>
+            <button class="fbtn swtf active" onclick="setSharedWFilter('all',this)">Alle</button>
+          </div>
+        </div>
+        <canvas id="shared-w-chart" height="200"></canvas>
+      </div>
       <div class="chart-wrap" style="overflow-x:auto;"><div class="chart-title">ALLE MESSUNGEN</div>
-        <div>${d.weight.map(e=>{const vals=[];if(e.weight)vals.push(`<b>${e.weight} kg</b>`);if(e.bauch)vals.push(`Bauch: <b>${e.bauch} cm</b>`);if(e.hueft)vals.push(`Hüfte: <b>${e.hueft} cm</b>`);if(e.kcal)vals.push(`${e.kcal} kcal`);return`<div class="data-entry-row" style="cursor:default;"><div><div class="data-entry-date">${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</div><div class="data-entry-vals">${vals.map(v=>`<span>${v}</span>`).join('')}</div></div></div>`;}).join('')}</div>
+        <div id="shared-w-list"></div>
       </div>`;
-    setTimeout(()=>{
-      const cv=g('shared-w-chart');if(!cv)return;
-      window._sharedCharts.w=new Chart(cv,{type:'line',data:{labels:sorted.map(e=>fmtShort(e.date)),datasets:[
-        {label:'Gewicht',data:wVals,borderColor:'#47c8ff',backgroundColor:'rgba(71,200,255,.08)',pointRadius:sorted.length>60?1:3,tension:.3,fill:true,order:2},
-        {label:'Ø 7 Tage',data:maW,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
-      ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
-    },50);
+    renderSharedWeightChart();
+    renderSharedWeightList();
     return;
   }
 
+  // ── BLUTDRUCK ──
   if(tabId==='bp'){
     if(!d.bp||!d.bp.length){el.innerHTML='<div class="empty"><div class="empty-text">Noch keine Messungen.</div></div>';return;}
     const sorted=[...d.bp].sort((a,b)=>a.date.localeCompare(b.date));
-    const sysV=sorted.map(e=>e.sys), diaV=sorted.map(e=>e.dia);
-    const maSys=calcMA(sysV,7), maDia=calcMA(diaV,7);
+    const sysV=sorted.map(e=>e.sys),diaV=sorted.map(e=>e.dia);
+    const maSys=calcMA(sysV,7),maDia=calcMA(diaV,7);
     el.innerHTML=`
       <div class="chart-wrap"><div class="chart-title" style="margin-bottom:10px;">VERLAUF</div>
         <canvas id="shared-bp-chart" height="220"></canvas></div>
@@ -1825,14 +1874,17 @@ function switchSharedTab(tabId, btn){
     return;
   }
 
+  // ── SCHLAF ──
   if(tabId==='sleep'){
     if(!d.sleep||!d.sleep.length){el.innerHTML='<div class="empty"><div class="empty-text">Noch keine Einträge.</div></div>';return;}
     const sorted=[...d.sleep].sort((a,b)=>a.date.localeCompare(b.date));
     const durV=sorted.map(e=>e.duration_mins?+(e.duration_mins/60).toFixed(2):null);
     const maD=calcMA(durV,7);
     el.innerHTML=`
-      <div class="chart-wrap"><div class="chart-title" style="margin-bottom:10px;">VERLAUF</div>
+      <div class="chart-wrap"><div class="chart-title" style="margin-bottom:10px;">SCHLAFDAUER</div>
         <canvas id="shared-sl-chart" height="200"></canvas></div>
+      <div class="chart-wrap"><div class="chart-title">SCHLAFQUALITÄT</div>
+        <div id="shared-sl-rating"></div></div>
       <div class="chart-wrap"><div class="chart-title">ALLE EINTRÄGE</div>
         <div>${sorted.slice().reverse().map(e=>{const h=Math.floor((e.duration_mins||0)/60),m=(e.duration_mins||0)%60;const rk=e.rating!=null?(e.rating>1?1:e.rating<-1?-1:e.rating):null;const r=rk!=null?SLEEP_RATINGS[rk]:null;return`<div class="data-entry-row" style="cursor:default;"><div><div class="data-entry-date">${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short'})} · ${e.sleep_from||'?'}–${e.sleep_to||'?'}</div><div class="data-entry-vals"><span>😴 <b>${h}h ${m}m</b></span>${r?`<span style="color:${r.color};">${r.emoji} ${r.label}</span>`:''}</div></div></div>`;}).join('')}</div>
       </div>`;
@@ -1842,10 +1894,27 @@ function switchSharedTab(tabId, btn){
         {label:'Schlafdauer (h)',data:durV,borderColor:'#c847ff',backgroundColor:'rgba(200,71,255,.07)',pointRadius:3,tension:.3,fill:true,order:2},
         {label:'Ø 7 Tage',data:maD,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
       ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80',callback:v=>v+'h'},grid:{color:'#2a2a38'},min:0}}}});
+      // Rating bars
+      const rEl=g('shared-sl-rating');if(!rEl)return;
+      const EMOJIS={1:{e:'😊',c:'#47ffb8',l:'Gut'},0:{e:'😐',c:'#47c8ff',l:'Neutral'},'-1':{e:'😔',c:'#ff4757',l:'Schlecht'}};
+      const total=sorted.filter(e=>e.rating!=null).length;
+      rEl.innerHTML=[1,0,-1].map(val=>{
+        const info=EMOJIS[val];
+        const count=sorted.filter(e=>e.rating!=null&&(e.rating>1?1:e.rating<-1?-1:e.rating)===val).length;
+        const pct=total?Math.round(count/total*100):0;
+        return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:20px;">${info.e}</span>
+          <div style="flex:1;background:var(--surface);border-radius:6px;height:18px;overflow:hidden;">
+            <div style="width:${pct}%;background:${info.c};height:100%;border-radius:6px;transition:width .4s;"></div>
+          </div>
+          <span style="font-size:12px;color:${info.c};font-weight:700;min-width:32px;">${count}×</span>
+        </div>`;
+      }).join('');
     },50);
     return;
   }
 
+  // ── STIMMUNG ──
   if(tabId==='mood'){
     if(!d.mood||!d.mood.length){el.innerHTML='<div class="empty"><div class="empty-text">Noch keine Einträge.</div></div>';return;}
     const sorted=[...d.mood].sort((a,b)=>a.date.localeCompare(b.date));
@@ -1869,6 +1938,95 @@ function switchSharedTab(tabId, btn){
     return;
   }
 }
+
+// ── SHARED HELPER FUNCTIONS ──
+function setSharedStatMode(mode, btn) {
+  _sStatMode = mode;
+  document.querySelectorAll('.stat-mode').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  updateSharedProgressChart();
+}
+
+function updateSharedProgressChart() {
+  const d = window._sharedData||{};
+  const sessions = (d.sessions||[]).map(sess=>({...sess,exercises:typeof sess.exercises==='string'?JSON.parse(sess.exercises||'[]'):(sess.exercises||[])}));
+  const sel = g('shared-ex-sel'); if(!sel) return;
+  const exName = sel.value;
+  const pts = [];
+  [...sessions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(s=>(s.exercises||[]).forEach(ex=>{
+    if(ex.name===exName){
+      const sets=ex.sets||[];
+      const maxKg=Math.max(...sets.map(st=>parseFloat(st.kg)||0));
+      const vol=Math.round(sets.reduce((a,st)=>a+(parseFloat(st.kg)||0)*(parseFloat(st.reps)||0),0));
+      if(_sStatMode==='kg'&&maxKg>0) pts.push({date:s.date,val:maxKg,ex,s});
+      if(_sStatMode==='vol'&&vol>0) pts.push({date:s.date,val:vol,ex,s});
+    }
+  }));
+  const old = g('shared-prog-chart'); if(!old) return;
+  const fresh = document.createElement('canvas'); fresh.id='shared-prog-chart'; fresh.height=200;
+  old.parentNode.replaceChild(fresh, old);
+  if(window._sharedCharts.prog) try{window._sharedCharts.prog.destroy();}catch(e){}
+  const color=_sStatMode==='kg'?'#e8ff47':'#47c8ff';
+  window._sharedCharts.prog = new Chart(fresh,{type:'line',data:{
+    labels:pts.map(d=>fmtShort(d.date)),
+    datasets:[{data:pts.map(d=>d.val),borderColor:color,backgroundColor:color+'14',pointBackgroundColor:color,pointRadius:5,tension:.3,fill:true}]
+  },options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  // Last 3 table
+  const tbl=g('shared-last3'); if(!tbl) return;
+  const last3=pts.slice(-3).reverse();
+  if(!last3.length){tbl.innerHTML='';return;}
+  const rows=last3.map(p=>{
+    const sets=p.ex.sets||[];
+    const nSets=sets.length,repsStr=sets.map(st=>st.reps||'?').join('/');
+    const maxKg=Math.max(...sets.map(st=>parseFloat(st.kg)||0));
+    const vol=Math.round(sets.reduce((a,st)=>a+(parseFloat(st.kg)||0)*(parseFloat(st.reps)||0),0));
+    return`<tr><td>${fmtD(p.date,{day:'2-digit',month:'short'})}</td><td style="text-align:center;">${nSets}</td><td style="text-align:center;">${repsStr}</td><td style="text-align:center;font-weight:700;">${maxKg} kg</td><td style="text-align:center;color:var(--accent3);">${vol}</td></tr>`;
+  }).join('');
+  tbl.innerHTML=`<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;letter-spacing:1px;">LETZTE 3 TRAININGS</div>
+    <table class="bp-table"><thead><tr><th>Datum</th><th style="text-align:center;">Sets</th><th style="text-align:center;">Reps</th><th style="text-align:center;">Max KG</th><th style="text-align:center;">Volumen</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function setSharedWFilter(f, btn) {
+  _sWTimeFilter = f;
+  document.querySelectorAll('.swtf').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderSharedWeightChart();
+}
+
+function renderSharedWeightChart() {
+  const d = window._sharedData||{};
+  let entries = [...(d.weight||[])].sort((a,b)=>a.date.localeCompare(b.date));
+  if(_sWTimeFilter !== 'all') {
+    const months={'1m':1,'3m':3,'6m':6,'1y':12}[_sWTimeFilter]||1;
+    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth()-months);
+    const cutStr = cutoff.toISOString().split('T')[0];
+    entries = entries.filter(e=>e.date>=cutStr);
+  }
+  const wVals = entries.map(e=>e.weight?parseFloat(e.weight):null);
+  const maW = calcMA(wVals,7);
+  const old = g('shared-w-chart'); if(!old) return;
+  const fresh = document.createElement('canvas'); fresh.id='shared-w-chart'; fresh.height=200;
+  old.parentNode.replaceChild(fresh, old);
+  if(window._sharedCharts.w) try{window._sharedCharts.w.destroy();}catch(e){}
+  window._sharedCharts.w = new Chart(fresh,{type:'line',data:{labels:entries.map(e=>fmtShort(e.date)),datasets:[
+    {label:'Gewicht',data:wVals,borderColor:'#47c8ff',backgroundColor:'rgba(71,200,255,.08)',pointRadius:entries.length>60?1:3,tension:.3,fill:true,order:2},
+    {label:'Ø 7 Tage',data:maW,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
+  ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+}
+
+function renderSharedWeightList() {
+  const d = window._sharedData||{};
+  const el = g('shared-w-list'); if(!el) return;
+  el.innerHTML = (d.weight||[]).map(e=>{
+    const vals=[];
+    if(e.weight) vals.push(`<b>${e.weight} kg</b>`);
+    if(e.bauch) vals.push(`Bauch: <b>${e.bauch} cm</b>`);
+    if(e.hueft) vals.push(`Hüfte: <b>${e.hueft} cm</b>`);
+    if(e.kcal) vals.push(`${e.kcal} kcal`);
+    return`<div class="data-entry-row" style="cursor:default;"><div><div class="data-entry-date">${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</div><div class="data-entry-vals">${vals.map(v=>`<span>${v}</span>`).join('')}</div></div></div>`;
+  }).join('');
+}
+
 
 // ── TABS ──
 function showTab(tab,el){
