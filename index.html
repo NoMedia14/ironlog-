@@ -2732,8 +2732,8 @@ function renderExerciseFilterList(){
           <div style="font-size:11px;color:var(--muted);">${count} Einheit${count!==1?'en':''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="resetExerciseData('${safe}')" title="Dauerhaft aus Statistik entfernen" style="color:var(--muted);font-size:11px;">✕ Entfernen</button>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <button class="btn btn-danger btn-sm" onclick="deleteExerciseFromAll('${safe}')" style="font-size:11px;">🗑</button>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
             <span style="font-size:11px;color:var(--muted);min-width:52px;text-align:right;">${visible?'Sichtbar':'Versteckt'}</span>
             <input type="checkbox" ${visible?'checked':''} 
               onchange="toggleHiddenExercise('${safe}');this.previousElementSibling.textContent=this.checked?'Sichtbar':'Versteckt';"
@@ -2745,13 +2745,26 @@ function renderExerciseFilterList(){
   }).join('');
 }
 
-function resetExerciseData(name){
-  // Permanently hide from stats – training data stays untouched
-  _hiddenExercises.add(name);
+
+
+async function deleteExerciseFromAll(name){
+  const count = sessions.filter(s=>(s.exercises||[]).some(e=>e.name===name)).length;
+  if(!confirm(`"${name}" aus allen ${count} Einheit${count!==1?'en':''} löschen?
+
+Die Trainings bleiben erhalten, nur diese Übung wird entfernt.`)) return;
+  setSyncState('syncing');
+  const affected = sessions.filter(s=>(s.exercises||[]).some(e=>e.name===name));
+  for(const s of affected){
+    const newEx = (s.exercises||[]).filter(e=>e.name!==name);
+    const{error}=await sb.from('sessions').update({exercises:newEx}).eq('id',s.id).eq('user_id',currentUser.id);
+    if(error){showToast('Fehler: '+error.message,true);setSyncState('error');return;}
+  }
+  _hiddenExercises.delete(name);
   saveHiddenExercises();
+  await loadAllData();
   renderExerciseFilterList();
   renderStats();
-  showToast(`"${name}" aus Statistik entfernt.`);
+  showToast(`"${name}" aus ${count} Einheit${count!==1?'en':''} gelöscht.`);
 }
 
 function renderStats(){
