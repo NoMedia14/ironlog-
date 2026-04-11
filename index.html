@@ -447,7 +447,7 @@
           </div>
           <div class="quick-btns">
             <button class="qbtn" onclick="timerCountdown(60,this)">1 Min</button>
-            <button class="qbtn" onclick="timerCountdown(90,this)">1:30</button>
+            <button class="qbtn" onclick="timerCountdown(90,this)">1:30 Min</button>
             <button class="qbtn" onclick="timerCountdown(120,this)">2 Min</button>
             <button class="qbtn" onclick="timerCountdown(180,this)">3 Min</button>
             <button class="qbtn" onclick="timerCountdown(240,this)">4 Min</button>
@@ -2501,6 +2501,7 @@ function renderPlans(){
     <div class="plan-actions">
       ${!p.archived?`<button class="btn btn-blue btn-sm" onclick="startPlanFromPlans('${p.id}')">▶ Starten</button>`:''}
       <button class="btn btn-ghost btn-sm" onclick="editPlan('${p.id}')">✏️</button>
+      <button class="btn btn-ghost btn-sm" onclick="duplicatePlan('${p.id}')" title="Duplizieren">⧉</button>
       <button class="btn btn-ghost btn-sm" onclick="toggleArchivePlan('${p.id}',${!p.archived})" title="${p.archived?'Reaktivieren':'Archivieren'}">${p.archived?'↩ Reaktivieren':'📦 Archiv'}</button>
       <button class="btn btn-danger btn-sm" onclick="deletePlan('${p.id}')">🗑</button>
     </div>
@@ -2641,6 +2642,27 @@ async function deletePlan(id){
   if(error){showToast('Fehler beim Löschen: '+error.message,true);setSyncState('error');console.error('Delete plan error:',error);return;}
   await loadAllData(); renderPlans(); populateLogPlanSelect(); showToast('Plan gelöscht.');
 }
+async function duplicatePlan(id){
+  const p = plans.find(x=>x.id===id); if(!p) return;
+  // Find next available name
+  const baseName = p.name.replace(/ Kopie \d+$/, '').replace(/ Kopie$/, '');
+  const existingNames = plans.map(x=>x.name);
+  let newName = baseName + ' Kopie';
+  let counter = 2;
+  while(existingNames.includes(newName)){
+    newName = baseName + ' Kopie ' + counter++;
+  }
+  setSyncState('syncing');
+  const{error}=await sb.from('plans').insert({
+    user_id: currentUser.id,
+    name: newName,
+    exercises: p.exercises||[]
+  });
+  if(error){showToast('Fehler: '+error.message,true);setSyncState('error');return;}
+  await loadAllData(); renderPlans(); populateLogPlanSelect();
+  showToast('Plan dupliziert: '+newName);
+}
+
 async function toggleArchivePlan(id, archive){
   const{error}=await sb.from('plans').update({archived:archive}).eq('id',id).eq('user_id',currentUser.id);
   if(error){showToast('Fehler: '+error.message,true);return;}
