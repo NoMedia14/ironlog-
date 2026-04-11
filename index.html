@@ -447,6 +447,7 @@
           </div>
           <div class="quick-btns">
             <button class="qbtn" onclick="timerCountdown(60,this)">1 Min</button>
+            <button class="qbtn" onclick="timerCountdown(90,this)">1:30</button>
             <button class="qbtn" onclick="timerCountdown(120,this)">2 Min</button>
             <button class="qbtn" onclick="timerCountdown(180,this)">3 Min</button>
             <button class="qbtn" onclick="timerCountdown(240,this)">4 Min</button>
@@ -480,6 +481,13 @@
             <button class="fbtn stat-mode active" id="smode-kg" onclick="setStatMode('kg',this)">Max. KG</button>
             <button class="fbtn stat-mode" id="smode-vol" onclick="setStatMode('vol',this)">Volumen</button>
           </div>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:12px;">
+          <button class="fbtn stf" onclick="setStatsTimeFilter('1m',this)">1M</button>
+          <button class="fbtn stf" onclick="setStatsTimeFilter('3m',this)">3M</button>
+          <button class="fbtn stf" onclick="setStatsTimeFilter('6m',this)">6M</button>
+          <button class="fbtn stf" onclick="setStatsTimeFilter('1y',this)">1J</button>
+          <button class="fbtn stf active" onclick="setStatsTimeFilter('all',this)">Alle</button>
         </div>
         <div class="field" style="margin-bottom:12px;"><label>Übung</label>
           <select id="chart-ex-sel" onchange="updateProgressChart()"></select></div>
@@ -729,15 +737,20 @@
         </div>
 
         <div class="macro-row">
-          <label class="macro-label">Aktivität</label>
-          <select class="macro-select" id="mc-aktivitaet" onchange="calcMacros()">
-            <option value="1.0">Krank / Bettruhe</option>
-            <option value="1.2">Wenig Aktivität</option>
-            <option value="1.4">Normale Aktivität</option>
-            <option value="1.6">Erhöhte Aktivität</option>
-            <option value="1.8">Sehr hohe Aktivität</option>
-            <option value="2.0">Höchste Aktivität / Leistungssportler</option>
-          </select>
+          <label class="macro-label">Ø Schritte/Tag</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steps" min="0" max="50000" step="500" placeholder="8000" oninput="calcMacros()"><span class="macro-unit">Schritte</span></div>
+        </div>
+        <div class="macro-row">
+          <label class="macro-label">Trainings/Woche</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-trainings" min="0" max="14" placeholder="3" oninput="calcMacros()"><span class="macro-unit">×</span></div>
+        </div>
+        <div class="macro-row">
+          <label class="macro-label">Trainingsdauer</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-trainingmin" min="0" max="300" step="5" placeholder="60" oninput="calcMacros()"><span class="macro-unit">Min</span></div>
+        </div>
+        <div class="macro-row">
+          <label class="macro-label">Aktivitätslevel</label>
+          <div id="mc-pal-label" style="font-size:13px;font-weight:700;color:var(--accent3);">—</div>
         </div>
 
         <div class="macro-row">
@@ -779,7 +792,7 @@
           <span class="macro-result-label">Kritischer Bereich</span>
           <span class="macro-result-val" id="mr-kritisch">—</span>
         </div>
-        <div class="macro-result-row macro-highlight-deficit">
+        <div class="macro-result-row">
           <span class="macro-result-label">Kaloriendefizit</span>
           <span class="macro-result-val accent3" id="mr-defizit">—</span>
         </div>
@@ -787,7 +800,7 @@
           <span class="macro-result-label">Theoret. Erhaltung</span>
           <span class="macro-result-val" id="mr-erhaltung-t">—</span>
         </div>
-        <div class="macro-result-row macro-highlight-maint">
+        <div class="macro-result-row">
           <span class="macro-result-label">Prakt. Erhaltung</span>
           <span class="macro-result-val accent4" id="mr-erhaltung-p">—</span>
         </div>
@@ -848,7 +861,7 @@
           <label class="macro-label">Kalorienanzahl</label>
           <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-kcal-input" min="500" max="8000" placeholder="3500" oninput="calcKfTage()"><span class="macro-unit">kcal</span></div>
         </div>
-        <div class="macro-result-row macro-highlight-deficit">
+        <div class="macro-result-row">
           <span class="macro-result-label">Anzahl der Tage</span>
           <span class="macro-result-val accent3" id="mr-tage">—</span>
         </div>
@@ -1781,7 +1794,7 @@ function switchSharedTab(tabId, btn){
     });
     let html='';
     Object.keys(groups).forEach(month=>{
-      html+=`<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;padding:8px 2px 6px;">${month}</div>`;
+      html+=`<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;padding:12px 2px 6px;border-bottom:1px solid var(--border);margin-bottom:8px;">${month}</div>`;
       html+=groups[month].map(s=>{
         const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
         const exDetail=(s.exercises||[]).map(ex=>{
@@ -2148,7 +2161,10 @@ function startWorkout(plan){
       ${exHtml}
       <div id="aw-extra-exercises"></div>
     </div>
-    <div style="padding:0 16px 12px;"><button class="btn btn-ghost" style="width:100%;" onclick="addAWExtraExercise()">＋ Übung hinzufügen</button></div>
+    <div style="padding:0 16px 12px;">
+
+      <button class="btn btn-ghost" style="width:100%;" onclick="addAWExtraExercise()">＋ Übung hinzufügen</button>
+    </div>
     <div class="aw-actions">
       <button class="btn btn-accent btn-sm" id="aw-save-btn" onclick="saveActiveWorkout(${JSON.stringify(exercises).replace(/"/g,'&quot;')})">💾 Speichern</button>
       <button class="btn btn-danger btn-sm" onclick="discardWorkout()">✕ Verwerfen</button>
@@ -2211,6 +2227,30 @@ function initAWInputStyles() {
   });
 }
 
+let _pauseInterval=null;
+function startPauseTimer(seconds){
+  if(_pauseInterval) clearInterval(_pauseInterval);
+  const el=g('pause-timer-display'); if(!el) return;
+  el.style.display='block';
+  let remaining=seconds;
+  const update=()=>{
+    const m=Math.floor(remaining/60), s=remaining%60;
+    el.textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    el.style.color=remaining<=10?'var(--accent2)':'var(--accent)';
+    if(remaining<=0){
+      clearInterval(_pauseInterval); _pauseInterval=null;
+      el.textContent='✓';
+      el.style.color='var(--accent4)';
+      setTimeout(()=>{el.style.display='none';},2000);
+      // vibrate if supported
+      if(navigator.vibrate) navigator.vibrate([200,100,200]);
+      return;
+    }
+    remaining--;
+  };
+  update();
+  _pauseInterval=setInterval(update,1000);
+}
 function toggleAWMin(){ const b=g('aw-body'),a=g('aw-arrow'); const open=b.classList.toggle('open'); a.textContent=open?'▼':'▶'; }
 async function saveActiveWorkout(exercises){
   const btn=g('aw-save-btn'); if(btn){btn.disabled=true;btn.textContent='Speichert…';}
@@ -2249,34 +2289,46 @@ function discardWorkout(){ if(!confirm('Training verwerfen?'))return; g('active-
 function renderLog(){
   const el=g('log-list');
   if(!sessions.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🏋️</div><div class="empty-text">Noch keine Einheiten.</div></div>`;return;}
-  // Group by month
-  const now = new Date();
-  const groups = {};
+  // Group by year → month (same structure as weight/bp)
+  const years={};
   sessions.forEach(s=>{
-    const d = new Date(s.date);
-    const diffMonths = (now.getFullYear()-d.getFullYear())*12 + (now.getMonth()-d.getMonth());
-    let key;
-    if(diffMonths < 12) {
-      key = fmtD(s.date,{month:'long',year:'numeric'}); // "März 2025"
-    } else {
-      key = String(d.getFullYear()); // "2024"
-    }
-    if(!groups[key]) groups[key]=[];
-    groups[key].push(s);
+    const yr=s.date.substring(0,4);
+    const mk=monthKey(s.date);
+    if(!years[yr]) years[yr]={};
+    if(!years[yr][mk]) years[yr][mk]=[];
+    years[yr][mk].push(s);
   });
-  let html='';
-  Object.keys(groups).forEach(month=>{
-    html+=`<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;padding:8px 2px 6px;">${month}</div>`;
-    html+=groups[month].map(s=>{
-      const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
-      return`<div class="session-card" onclick="openDetail('${s.id}')">
-        <div class="session-date">${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short'})}</div>
-        <div class="session-name">${s.name||'Training'}</div>
-        <div class="session-meta"><span>💪 ${ec} Übung${ec!==1?'en':''}</span><span>📋 ${sc} Sets</span></div>
-      </div>`;
+  const yearKeys=Object.keys(years).sort().reverse();
+  let gi=0;
+  el.innerHTML=yearKeys.map(yr=>{
+    const months=years[yr];
+    const mkeys=Object.keys(months).sort().reverse();
+    const monthsHtml=mkeys.map((mk,mi)=>{
+      const gIdx='lg-'+(gi++);
+      const entries=[...months[mk]].sort((a,b)=>b.date.localeCompare(a.date));
+      const rows=entries.map(s=>{
+        const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
+        return`<div class="data-entry-row" onclick="openDetail('${s.id}')"><div>
+          <div class="data-entry-date">${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short'})}</div>
+          <div class="data-entry-vals"><span>💪 ${ec} Übung${ec!==1?'en':''}</span><span>📋 ${sc} Sets</span><span style="font-size:12px;font-weight:600;">${s.name||'Training'}</span></div>
+        </div><span style="color:var(--muted)">▶</span></div>`;
+      }).join('');
+      const isFirst=(yr===yearKeys[0]&&mi===0);
+      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('${gIdx}')"><div><div class="data-group-title" style="color:var(--accent3);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einheiten</div></div><div id="${gIdx}-arr">${isFirst?'▼':'▶'}</div></div><div class="data-group-body${isFirst?' open':''}" id="${gIdx}">${rows}</div></div>`;
     }).join('');
-  });
-  el.innerHTML=html;
+    const total=Object.values(months).reduce((a,v)=>a+v.length,0);
+    const isCurrent=(yr===yearKeys[0]);
+    return`<div class="year-group" id="yg-log-${yr}">
+      <div class="year-header" onclick="toggleYearGroup('yg-log-${yr}')">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span>
+          <span style="font-size:12px;color:var(--muted);">${total} Einheiten</span>
+        </div>
+        <span id="yarr-log-${yr}" style="color:var(--muted);font-size:12px;">${isCurrent?'▼':'▶'}</span>
+      </div>
+      <div class="year-body${isCurrent?' open':''}" id="yb-log-${yr}">${monthsHtml}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── SESSION FORM ──
@@ -2613,6 +2665,13 @@ function renderStats(){
   updateProgressChart();
 }
 let _statMode = 'kg';
+let _statsTimeFilter = 'all';
+function setStatsTimeFilter(f, btn) {
+  _statsTimeFilter = f;
+  document.querySelectorAll('.stf').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  updateProgressChart();
+}
 function setStatMode(mode, btn) {
   _statMode = mode;
   document.querySelectorAll('.stat-mode').forEach(b => b.classList.remove('active'));
@@ -2623,7 +2682,15 @@ function setStatMode(mode, btn) {
 function updateProgressChart(){
   const exName = g('chart-ex-sel').value;
   const pts = [];
-  const allSessions = [...sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  // Apply time filter
+  let filteredSessions = [...sessions];
+  if(_statsTimeFilter !== 'all') {
+    const months={'1m':1,'3m':3,'6m':6,'1y':12}[_statsTimeFilter]||999;
+    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth()-months);
+    const cutStr = cutoff.toISOString().split('T')[0];
+    filteredSessions = filteredSessions.filter(s=>s.date>=cutStr);
+  }
+  const allSessions = filteredSessions.sort((a,b)=>a.date.localeCompare(b.date));
   allSessions.forEach(s=>(s.exercises||[]).forEach(ex=>{
     if(ex.name===exName){
       const sets = ex.sets||[];
@@ -3947,7 +4014,30 @@ function calcMacros() {
   const groesse = parseFloat(g('mc-groesse')?.value);
   const gewicht = parseFloat(g('mc-gewicht')?.value);
   const wunsch  = parseFloat(g('mc-wunsch')?.value);
-  const akt     = parseFloat(g('mc-aktivitaet')?.value) || 1.4;
+  // Compute PAL from steps + training
+  const steps    = parseFloat(g('mc-steps')?.value) || 8000;
+  const trainings= parseFloat(g('mc-trainings')?.value) || 0;
+  const trainMin = parseFloat(g('mc-trainingmin')?.value) || 60;
+
+  // Step contribution: ~0.045 kcal/kg/step – mapped to PAL addition
+  // Base sedentary PAL = 1.2; each 1000 steps adds ~0.04 PAL
+  const stepPAL = Math.min(steps / 1000 * 0.04, 0.60); // max +0.60 from steps
+
+  // Training contribution: MET ~6 for moderate lifting, 60min session
+  // Extra kcal/day = trainings/week * duration_min * MET * weight / 60 / 7
+  // We convert that to PAL addition over the week
+  // PAL_training_add = (trainings * trainMin * 6) / (7 * 1440) * ~1.2 normalization
+  const trainingPAL = Math.min((trainings * trainMin * 6) / (7 * 1440) * 1.2, 0.60);
+
+  const akt = Math.min(Math.max(1.2 + stepPAL + trainingPAL, 1.2), 2.2);
+  // Show PAL label
+  const palLabel = akt < 1.25 ? 'Krank / Bettruhe'
+    : akt < 1.35 ? 'Wenig Aktivität'
+    : akt < 1.55 ? 'Normale Aktivität'
+    : akt < 1.75 ? 'Erhöhte Aktivität'
+    : akt < 1.95 ? 'Sehr hohe Aktivität'
+    : 'Höchste Aktivität / Leistungssport';
+  if(g('mc-pal-label')) g('mc-pal-label').textContent = palLabel + ` (PAL ${akt.toFixed(2)})`;
 
   if (!alter || !groesse || !gewicht) return;
 
