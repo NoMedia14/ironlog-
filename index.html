@@ -489,8 +489,11 @@
           <button class="fbtn stf" onclick="setStatsTimeFilter('1y',this)">1J</button>
           <button class="fbtn stf active" onclick="setStatsTimeFilter('all',this)">Alle</button>
         </div>
-        <div class="field" style="margin-bottom:12px;"><label>Übung</label>
-          <select id="chart-ex-sel" onchange="updateProgressChart()"></select></div>
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px;">
+          <div class="field" style="flex:1;margin-bottom:0;"><label>Übung</label>
+            <select id="chart-ex-sel" onchange="updateProgressChart()"></select></div>
+          <button class="btn btn-ghost btn-sm" onclick="openExerciseFilter()" style="height:42px;white-space:nowrap;">⚙ Filter</button>
+        </div>
         <canvas id="progressChart" height="200"></canvas>
         <div id="stats-last3" style="margin-top:14px;"></div>
       </div>
@@ -1017,6 +1020,21 @@
 
 
 <!-- MODAL: HABIT ERSTELLEN/BEARBEITEN -->
+<div class="modal-bg" id="modal-ex-filter">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ÜBUNGEN VERWALTEN</div>
+      <button class="close-btn" onclick="closeModal('modal-ex-filter')">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Deaktivierte Übungen erscheinen nicht im Fortschrittsdiagramm.</div>
+    <div id="ex-filter-list" style="max-height:60vh;overflow-y:auto;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="btn btn-ghost" onclick="resetExerciseFilter()">Alle zurücksetzen</button>
+      <button class="btn btn-accent" onclick="closeModal('modal-ex-filter');renderStats();">Fertig</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-habit">
   <div class="modal">
     <div class="modal-header">
@@ -2672,6 +2690,51 @@ async function toggleArchivePlan(id, archive){
 function startPlanFromPlans(id){ const plan=plans.find(p=>p.id===id); if(!plan)return; showTab('log',document.querySelector('.tab[data-tab="log"]')); startWorkout(plan); }
 
 // ── STATS ── FIX: use loaded sessions data properly
+// Exercise filter: names to HIDE from stats select
+let _hiddenExercises = new Set(JSON.parse(localStorage.getItem('ironlog_hidden_ex')||'[]'));
+
+function saveHiddenExercises(){
+  localStorage.setItem('ironlog_hidden_ex', JSON.stringify([..._hiddenExercises]));
+}
+
+function toggleHiddenExercise(name){
+  if(_hiddenExercises.has(name)) _hiddenExercises.delete(name);
+  else _hiddenExercises.add(name);
+  saveHiddenExercises();
+  // Update checkbox in modal
+  const cb = document.getElementById('exf-'+CSS.escape(name));
+  if(cb) cb.checked = !_hiddenExercises.has(name);
+}
+
+function resetExerciseFilter(){
+  _hiddenExercises.clear();
+  saveHiddenExercises();
+  document.querySelectorAll('#ex-filter-list input[type=checkbox]').forEach(cb=>cb.checked=true);
+}
+
+function openExerciseFilter(){
+  const allEx = sessions.flatMap(s=>s.exercises||[]);
+  const names = [...new Set(allEx.map(e=>e.name).filter(Boolean))].sort();
+  const el = g('ex-filter-list');
+  el.innerHTML = names.map(n=>{
+    const visible = !_hiddenExercises.has(n);
+    const count = sessions.filter(s=>(s.exercises||[]).some(e=>e.name===n)).length;
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:14px;font-weight:600;">${n}</div>
+        <div style="font-size:11px;color:var(--muted);">${count} Einheit${count!==1?'en':''}</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <span style="font-size:12px;color:var(--muted);">${visible?'Sichtbar':'Versteckt'}</span>
+        <input type="checkbox" id="exf-${n.replace(/[^a-zA-Z0-9]/g,'_')}" ${visible?'checked':''} 
+          onchange="toggleHiddenExercise('${n.replace(/'/g,'\'')}');this.previousElementSibling.textContent=this.checked?'Sichtbar':'Versteckt';"
+          style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+      </label>
+    </div>`;
+  }).join('');
+  g('modal-ex-filter').classList.add('open');
+}
+
 function renderStats(){
   const total=sessions.length,allEx=sessions.flatMap(s=>s.exercises||[]);
   const totalSets=sessions.reduce((sum,s)=>sum+(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0),0);
@@ -2681,9 +2744,13 @@ function renderStats(){
     <div class="stat-box"><div class="stat-val">${totalSets}</div><div class="stat-label">Sets gesamt</div></div>
     <div class="stat-box"><div class="stat-val">${unique}</div><div class="stat-label">Übungen</div></div>
     <div class="stat-box"><div class="stat-val">${total?Math.round(totalSets/total):0}</div><div class="stat-label">Sets/Einheit</div></div>`;
-  const names=[...new Set(allEx.map(e=>e.name).filter(Boolean))].sort();
+  // Only show non-hidden exercises in select
+  const names=[...new Set(allEx.map(e=>e.name).filter(Boolean))].sort()
+    .filter(n=>!_hiddenExercises.has(n));
   const sel=g('chart-ex-sel');
-  sel.innerHTML=names.length?names.map(n=>`<option value="${n}">${n}</option>`).join(''):'<option>Keine Daten</option>';
+  const prev=sel.value;
+  sel.innerHTML=names.length?names.map(n=>`<option value="${n}">${n}</option>`):'<option>Keine Daten</option>';
+  if(prev&&names.includes(prev)) sel.value=prev; // keep selection if still visible
   updateProgressChart();
 }
 let _statMode = 'kg';
