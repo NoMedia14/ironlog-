@@ -2117,7 +2117,7 @@ function setTBtn(t){ g('timer-btn').textContent=t; g('timer-mini-btn').textConte
 function toggleTimerMin(){ timerMinimized=!timerMinimized; const sec=g('timer-section'),body=g('timer-body'),mr=g('timer-mini-row'),btn=sec.querySelector('.btn-xs'); if(timerMinimized){sec.classList.add('minimized');body.style.display='none';mr.style.display='flex';btn.textContent='▼ Max';}else{sec.classList.remove('minimized');body.style.display='block';mr.style.display='none';btn.textContent='▲ Min';} }
 
 // ── LOG ──
-function populateLogPlanSelect(){ const sel=g('log-plan-sel'); sel.innerHTML='<option value="">— Plan wählen —</option>'; plans.forEach(p=>sel.innerHTML+=`<option value="${p.id}">${p.name}</option>`); }
+function populateLogPlanSelect(){ const sel=g('log-plan-sel'); sel.innerHTML='<option value="">— Plan wählen —</option>'; plans.filter(p=>!p.archived).forEach(p=>sel.innerHTML+=`<option value="${p.id}">${p.name}</option>`); }
 function startSelectedPlan(){ const pid=g('log-plan-sel').value; if(!pid){showToast('Bitte Plan auswählen.',true);return;} const plan=plans.find(p=>p.id===pid); if(plan) startWorkout(plan); }
 function openBlankSession(){ _editingSessionId=null; exCounter=0;setCounters={}; g('s-date').value=today(); g('s-name').value=''; g('ex-container').innerHTML=''; addExercise(); g('modal-session').classList.add('open'); }
 
