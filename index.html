@@ -16,6 +16,28 @@
       --accent:#e8ff47; --accent2:#ff4757; --accent3:#47c8ff; --accent4:#47ffb8;
       --text:#f0f0f8; --muted:#6b6b80; --radius:14px;
     }
+    :root.light-mode {
+      --bg:#f0f2f5; --surface:#e4e7ec; --card:#ffffff; --border:#d0d5dd;
+      --accent:#5a7f00; --accent2:#d92d20; --accent3:#0077b6; --accent4:#008060;
+      --text:#101828; --muted:#667085; --radius:14px;
+    }
+    :root.light-mode .logo { color: var(--accent); }
+    :root.light-mode .logo span { color: var(--text); }
+    :root.light-mode .auth-logo { color: var(--accent); }
+    :root.light-mode .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    :root.light-mode .session-card:hover { border-color: var(--accent3); }
+    :root.light-mode .aw-input::placeholder { color: rgba(90,127,0,0.45); }
+    :root.light-mode .aw-input.has-value { background:rgba(0,128,96,0.08); color:var(--accent4); }
+    :root.light-mode .macro-toggle.active { background:var(--accent3); color:#fff; }
+    :root.light-mode .macro-toggle3.active { background:var(--accent); color:#fff; }
+    :root.light-mode .btn-accent { background:var(--accent); color:#fff; }
+    :root.light-mode .user-avatar { background:var(--accent); color:#fff; }
+    :root.light-mode header { background:rgba(240,242,245,0.92); }
+    :root.light-mode nav { background:var(--surface); }
+    :root.light-mode .fbtn.active { background:var(--accent3); color:#fff; border-color:var(--accent3); }
+    :root.light-mode .stat-box { background:var(--card); }
+    :root.light-mode .timer-main.t-play { background:var(--accent); color:#fff; }
+    :root.light-mode input, :root.light-mode textarea, :root.light-mode select { color:var(--text); background:var(--card); }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
 
@@ -401,6 +423,7 @@
   <header>
     <div class="logo">IRON<span>LOG</span></div>
     <div class="header-right">
+      <button onclick="toggleLightMode()" id="theme-btn" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:15px;color:var(--muted);transition:all .2s;" title="Hell/Dunkel">🌙</button>
       <span class="sync-dot" id="sync-dot"></span>
       <div class="user-badge" onclick="showTab('profile',null)">
         <div class="user-avatar" id="header-avatar">?</div>
@@ -709,7 +732,13 @@
 
       <!-- SECTION 1: EINGABEN -->
       <div class="chart-wrap" style="margin-bottom:12px;">
-        <div class="chart-title" style="margin-bottom:14px;">DEINE DATEN</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="chart-title" style="margin-bottom:0;">DEINE DATEN</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="macro-save-btn" onclick="toggleMacroSave()" class="btn btn-ghost btn-sm" style="font-size:11px;">💾 Speichern: AUS</button>
+            <button onclick="resetMacroInputs()" class="btn btn-ghost btn-sm" style="font-size:11px;">↺ Reset</button>
+          </div>
+        </div>
 
         <div class="macro-row">
           <label class="macro-label">Geschlecht</label>
@@ -1359,7 +1388,7 @@ async function showApp(session){
     await loadAllData();
   }catch(e){ console.error('Load error:',e); }
   showScreen('app');
-  renderLog(); updateFab(); populateLogPlanSelect(); loadSettings();
+  renderLog(); updateFab(); populateLogPlanSelect(); loadSettings(); loadTheme();
 }
 
 async function initApp(){
@@ -4178,6 +4207,22 @@ function _doExportMoodPDF(mode){
 // ═══════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════
+// ── THEME ──
+function toggleLightMode(){
+  const isLight = document.documentElement.classList.toggle('light-mode');
+  localStorage.setItem('ironlog_theme', isLight?'light':'dark');
+  const btn = g('theme-btn');
+  if(btn) btn.textContent = isLight ? '☀️' : '🌙';
+}
+function loadTheme(){
+  const t = localStorage.getItem('ironlog_theme');
+  if(t==='light'){
+    document.documentElement.classList.add('light-mode');
+    const btn = g('theme-btn');
+    if(btn) btn.textContent = '☀️';
+  }
+}
+
 // ── KALORIEN & MAKRO RECHNER ──
 // ═══════════════════════════════════════════════════════════
 let _macroGender = 'm';
@@ -4203,6 +4248,8 @@ function setMacro3(type, val) {
 }
 
 function calcMacros() {
+  // Auto-save if enabled
+  if(localStorage.getItem('ironlog_macro_save')) saveMacroInputs();
   const alter   = parseFloat(g('mc-alter')?.value);
   const groesse = parseFloat(g('mc-groesse')?.value);
   const gewicht = parseFloat(g('mc-gewicht')?.value);
@@ -4361,6 +4408,27 @@ function calcKfTage() {
 
 // Pre-fill macros from current weight entry if available
 function prefillMacrosFromData() {
+  // Load saved macro state if enabled
+  const saved = localStorage.getItem('ironlog_macro_save');
+  if(saved) {
+    try {
+      const d = JSON.parse(saved);
+      if(g('mc-alter'))       g('mc-alter').value       = d.alter||'';
+      if(g('mc-groesse'))     g('mc-groesse').value     = d.groesse||'';
+      if(g('mc-gewicht'))     g('mc-gewicht').value     = d.gewicht||'';
+      if(g('mc-wunsch'))      g('mc-wunsch').value      = d.wunsch||'';
+      if(g('mc-steps'))       g('mc-steps').value       = d.steps||'';
+      if(g('mc-trainings'))   g('mc-trainings').value   = d.trainings||'';
+      if(g('mc-trainingmin')) g('mc-trainingmin').value = d.trainingmin||'';
+      if(d.gender) { _macroGender=d.gender; g('mg-m').classList.toggle('active',d.gender==='m'); g('mg-f').classList.toggle('active',d.gender==='f'); g('mg-f').classList.toggle('female',true); if(d.gender==='f') g('mg-f').classList.add('active'); }
+      if(d.protein) setMacro3('protein',d.protein);
+      if(d.vprotein) setMacro3('vprotein',d.vprotein);
+      if(d.fat) setMacro3('fat',d.fat);
+      updateMacroSaveBtn(true);
+      return; // saved data loaded, skip weight prefill
+    } catch(e){}
+  }
+  // Fallback: prefill weight from latest entry
   if (weightEntries.length) {
     const latest = [...weightEntries].sort((a,b) => b.date.localeCompare(a.date))[0];
     if (latest?.weight && !g('mc-gewicht')?.value) {
@@ -4368,6 +4436,57 @@ function prefillMacrosFromData() {
       if (el) el.value = latest.weight;
     }
   }
+  updateMacroSaveBtn(false);
+}
+
+function updateMacroSaveBtn(active){
+  const btn = g('macro-save-btn'); if(!btn) return;
+  btn.textContent = active ? '💾 Speichern: AN' : '💾 Speichern: AUS';
+  btn.style.color = active ? 'var(--accent4)' : '';
+  btn.style.borderColor = active ? 'var(--accent4)' : '';
+}
+
+function toggleMacroSave(){
+  const active = !!localStorage.getItem('ironlog_macro_save');
+  if(active){
+    localStorage.removeItem('ironlog_macro_save');
+    updateMacroSaveBtn(false);
+    showToast('Speichern deaktiviert – Daten werden nicht mehr gespeichert.');
+  } else {
+    saveMacroInputs();
+    showToast('Speichern aktiviert – Daten werden beim nächsten Öffnen geladen.');
+  }
+}
+
+function saveMacroInputs(){
+  const d = {
+    alter:       g('mc-alter')?.value||'',
+    groesse:     g('mc-groesse')?.value||'',
+    gewicht:     g('mc-gewicht')?.value||'',
+    wunsch:      g('mc-wunsch')?.value||'',
+    steps:       g('mc-steps')?.value||'',
+    trainings:   g('mc-trainings')?.value||'',
+    trainingmin: g('mc-trainingmin')?.value||'',
+    gender:  _macroGender,
+    protein: _macroProtein,
+    vprotein: _macroVProtein,
+    fat: _macroFat
+  };
+  localStorage.setItem('ironlog_macro_save', JSON.stringify(d));
+  updateMacroSaveBtn(true);
+}
+
+function resetMacroInputs(){
+  ['mc-alter','mc-groesse','mc-gewicht','mc-wunsch','mc-steps','mc-trainings','mc-trainingmin'].forEach(id=>{
+    const el=g(id); if(el) el.value='';
+  });
+  _macroGender='m'; _macroProtein='low'; _macroVProtein='low'; _macroFat='mid';
+  g('mg-m').classList.add('active'); g('mg-f').classList.remove('active');
+  setMacro3('protein','low'); setMacro3('vprotein','low'); setMacro3('fat','mid');
+  // If save is on, update saved data
+  if(localStorage.getItem('ironlog_macro_save')) saveMacroInputs();
+  calcMacros();
+  showToast('Kalorienrechner zurückgesetzt.');
 }
 
 
