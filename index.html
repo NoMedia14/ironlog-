@@ -3124,8 +3124,9 @@ function renderKorrelationChart(){
 
   // Render result box
   const resEl=g('korrelation-result');
-  if(chartPairs.length<14){
-    if(resEl) resEl.innerHTML=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Zu wenig Datenpunkte – mindestens 14 Tage mit Gewicht UND Kalorien benötigt.<br>Aktuell: ${chartPairs.length} Tage.</div>`;
+  const minPairs = wTimeFilter==='14d' ? 5 : 14;
+  if(chartPairs.length<minPairs){
+    if(resEl) resEl.innerHTML=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Zu wenig Datenpunkte – mindestens ${minPairs} Tage mit Gewicht UND Kalorien benötigt.<br>Aktuell: ${chartPairs.length} Tage.</div>`;
     return;
   }
 
