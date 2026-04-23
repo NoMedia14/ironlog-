@@ -546,8 +546,13 @@
           <button class="fbtn wmet" onclick="switchWMetric('bauch',this)">&#x1F4CF; Bauch</button>
           <button class="fbtn wmet" onclick="switchWMetric('hueft',this)">&#x1F4D0; H&#xFC;fte</button>
           <button class="fbtn wmet" onclick="switchWMetric('kcal',this)">&#x1F525; Kalorien</button>
+          <button class="fbtn wmet" onclick="switchWMetric('korrelation',this)">&#x1F4C8; Korrelation</button>
         </div>
         <canvas id="weightChart" height="200"></canvas>
+        <div id="korrelation-wrap" style="display:none;">
+          <canvas id="korrelationChart" height="220"></canvas>
+          <div id="korrelation-result" style="margin-top:14px;"></div>
+        </div>
       </div>
       <div class="week-compare"><div class="chart-title" style="margin-bottom:14px;">7-TAGE WOCHENVERGLEICH</div>
         <div id="week-compare-out"></div></div>
@@ -3035,6 +3040,18 @@ function renderWeightChart(){
   const freshW=document.createElement('canvas');
   freshW.id='weightChart'; freshW.height=200;
   oldW.parentNode.replaceChild(freshW,oldW);
+
+  // Handle correlation view
+  const kWrap = g('korrelation-wrap');
+  if(currentWMetric==='korrelation'){
+    g('weightChart').style.display='none';
+    if(kWrap) kWrap.style.display='block';
+    renderKorrelationChart();
+    return;
+  }
+  g('weightChart').style.display='';
+  if(kWrap) kWrap.style.display='none';
+
   const m=currentWMetric;
   const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorien (kcal)'};
   const colors={weight:'#47c8ff',bauch:'#47ffb8',hueft:'#c847ff',kcal:'#ff9f47'};
@@ -3047,6 +3064,114 @@ function renderWeightChart(){
     {label:'Ø 7 Tage',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[],order:1,spanGaps:true}
   ];
   wtChartI=new Chart(g('weightChart'),{type:'line',data:{labels:pts.map(p=>fmtShort(p.date)),datasets},options:{plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Trend')}}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+}
+
+let korrelationChartI = null;
+
+function pearson(xs, ys){
+  const n=xs.length; if(n<2)return 0;
+  const mx=xs.reduce((a,b)=>a+b)/n, my=ys.reduce((a,b)=>a+b)/n;
+  let num=0,dx=0,dy=0;
+  for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);dx+=(xs[i]-mx)**2;dy+=(ys[i]-my)**2;}
+  return dx&&dy?num/Math.sqrt(dx*dy):0;
+}
+
+function renderKorrelationChart(){
+  // Build date-indexed maps from filtered entries
+  const filtered = filterByTime(weightEntries, wTimeFilter);
+  const wMap={}, kMap={};
+  filtered.forEach(e=>{
+    if(e.weight) wMap[e.date]=parseFloat(e.weight);
+    if(e.kcal)   kMap[e.date]=parseFloat(e.kcal);
+  });
+
+  // Find dates with BOTH weight and kcal
+  const dates=[...new Set([...Object.keys(wMap),...Object.keys(kMap)])].sort();
+
+  // Try lag 0,1,2,3 days – find best correlation
+  let bestR=0, bestLag=0;
+  for(let lag=0;lag<=3;lag++){
+    const pairs=[];
+    dates.forEach(d=>{
+      if(wMap[d]===undefined) return;
+      // Find kcal from lag days ago
+      const lagDate=new Date(d); lagDate.setDate(lagDate.getDate()-lag);
+      const lagStr=lagDate.toISOString().split('T')[0];
+      if(kMap[lagStr]!==undefined) pairs.push({w:wMap[d], k:kMap[lagStr]});
+    });
+    if(pairs.length<7) continue;
+    const r=pearson(pairs.map(p=>p.k), pairs.map(p=>p.w));
+    if(Math.abs(r)>Math.abs(bestR)){bestR=r;bestLag=lag;}
+  }
+
+  // Build chart pairs using bestLag
+  const chartPairs=[];
+  dates.forEach(d=>{
+    if(wMap[d]===undefined) return;
+    const lagDate=new Date(d); lagDate.setDate(lagDate.getDate()-bestLag);
+    const lagStr=lagDate.toISOString().split('T')[0];
+    if(kMap[lagStr]!==undefined) chartPairs.push({date:d, w:wMap[d], k:kMap[lagStr]});
+  });
+
+  // Render result box
+  const resEl=g('korrelation-result');
+  if(chartPairs.length<14){
+    if(resEl) resEl.innerHTML=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Zu wenig Datenpunkte – mindestens 14 Tage mit Gewicht UND Kalorien benötigt.<br>Aktuell: ${chartPairs.length} Tage.</div>`;
+    return;
+  }
+
+  const r=Math.round(bestR*100)/100;
+  const absR=Math.abs(r);
+  const strength = absR>=0.7?'starker':absR>=0.4?'moderater':absR>=0.2?'schwacher':'kein';
+  const direction = r>0?'positiver':'negativer';
+  const color = absR>=0.5?'#47ffb8':absR>=0.3?'#e8ff47':'#6b6b80';
+  const lagText = bestLag===0?'am selben Tag':`${bestLag} Tag${bestLag>1?'e':''} später`;
+  const interpretation = absR<0.2
+    ? 'Kein erkennbarer Zusammenhang zwischen Kalorien und Gewicht.'
+    : `Dein Gewicht reagiert tendenziell <b>${lagText}</b> auf veränderten Kalorienintake.`;
+
+  if(resEl) resEl.innerHTML=`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);">KORRELATION (PEARSON r)</div>
+        <div style="font-size:28px;font-weight:800;color:${color};">${r>=0?'+':''}${r}</div>
+      </div>
+      <div style="font-size:13px;margin-bottom:6px;"><span style="color:${color};font-weight:700;">${strength.charAt(0).toUpperCase()+strength.slice(1)} ${direction} Zusammenhang</span></div>
+      <div style="font-size:12px;color:var(--muted);">${interpretation}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">${chartPairs.length} Datenpunkte · bester Lag: ${bestLag} ${bestLag===1?'Tag':'Tage'}</div>
+    </div>`;
+
+  // Build dual-axis chart
+  const old=g('korrelationChart'); if(!old)return;
+  const fresh=document.createElement('canvas'); fresh.id='korrelationChart'; fresh.height=220;
+  old.parentNode.replaceChild(fresh,old);
+  if(korrelationChartI){try{korrelationChartI.destroy();}catch(e){}}
+
+  // Smooth kcal with 7-day MA for cleaner visual
+  const kRaw=chartPairs.map(p=>p.k);
+  const kSmooth=calcMA(kRaw,7);
+  const wVals=chartPairs.map(p=>p.w);
+  const wSmooth=calcMA(wVals,7);
+
+  korrelationChartI=new Chart(fresh,{
+    type:'line',
+    data:{
+      labels:chartPairs.map(p=>fmtShort(p.date)),
+      datasets:[
+        {label:'Gewicht (kg)',data:wVals,borderColor:'#47c8ff',backgroundColor:'rgba(71,200,255,.06)',pointRadius:chartPairs.length>60?0:2,tension:.3,fill:true,order:3,yAxisID:'yW'},
+        {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
+        {label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',borderDash:[4,2],spanGaps:true}
+      ]
+    },
+    options:{
+      plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:10}}},
+      scales:{
+        x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
+        yW:{position:'left',ticks:{color:'#47c8ff',font:{size:10}},grid:{color:'#2a2a38'},title:{display:true,text:'kg',color:'#47c8ff',font:{size:10}}},
+        yK:{position:'right',ticks:{color:'#ff9f47',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'kcal',color:'#ff9f47',font:{size:10}}}
+      }
+    }
+  });
 }
 function renderWeekCompare(){
   const el=g('week-compare-out');
