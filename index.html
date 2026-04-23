@@ -3122,23 +3122,53 @@ function renderKorrelationChart(){
 
   const r=Math.round(bestR*100)/100;
   const absR=Math.abs(r);
-  const strength = absR>=0.7?'starker':absR>=0.4?'moderater':absR>=0.2?'schwacher':'kein';
-  const direction = r>0?'positiver':'negativer';
+  const rStr=(r>=0?'+':'')+r.toFixed(2).replace('.',',');
+  const strength = absR>=0.7?'Starker':absR>=0.4?'Moderater':absR>=0.2?'Schwacher':'Kein';
+  const direction = r>=0?'positiver':'negativer';
   const color = absR>=0.5?'#47ffb8':absR>=0.3?'#e8ff47':'#6b6b80';
   const lagText = bestLag===0?'am selben Tag':`${bestLag} Tag${bestLag>1?'e':''} später`;
-  const interpretation = absR<0.2
-    ? 'Kein erkennbarer Zusammenhang zwischen Kalorien und Gewicht.'
-    : `Dein Gewicht reagiert tendenziell <b>${lagText}</b> auf veränderten Kalorienintake.`;
+
+  // Detect goal from trend (last 30 days vs first 30 days of filtered data)
+  const wSeries=chartPairs.map(p=>p.w);
+  const firstAvg=wSeries.slice(0,Math.min(14,wSeries.length)).reduce((a,b)=>a+b)/Math.min(14,wSeries.length);
+  const lastAvg=wSeries.slice(-Math.min(14,wSeries.length)).reduce((a,b)=>a+b)/Math.min(14,wSeries.length);
+  const trend=lastAvg-firstAvg; // negative = losing weight, positive = gaining
+
+  // Also check wunschgewicht from macro calculator if saved
+  let goal='halten'; // default
+  const saved=localStorage.getItem('ironlog_macro_save');
+  if(saved){try{const d=JSON.parse(saved);const w=parseFloat(d.gewicht),wu=parseFloat(d.wunsch);if(w&&wu){if(wu<w-0.5)goal='reduzieren';else if(wu>w+0.5)goal='erhöhen';else goal='halten';}}catch(e){}}
+  else if(trend<-0.5) goal='reduzieren';
+  else if(trend>0.5) goal='erhöhen';
+
+  // Recommendation based on correlation strength + goal
+  let recommendation='';
+  if(absR>=0.2){
+    const avgKcal=Math.round(chartPairs.reduce((a,p)=>a+p.k,0)/chartPairs.length);
+    if(goal==='reduzieren'){
+      if(r>0.3) recommendation=`Da mehr Kalorien mit mehr Gewicht korrelieren: Reduziere deinen Kalorienintake (aktuell Ø ${avgKcal} kcal/Tag). Ein Defizit von 300–500 kcal ist realistisch nachhaltig.`;
+      else if(r<-0.3) recommendation=`Interessant: Bei dir korrelieren <i>weniger</i> Kalorien mit höherem Gewicht – möglicherweise durch Wasserretention oder unregelmäßige Esstage. Fokus auf konstante Kalorienzufuhr statt Einschränkung.`;
+      else recommendation=`Der Zusammenhang ist schwach. Neben Kalorien spielen Schlaf, Stress und Wasserhaushalt eine große Rolle. Leichtes Defizit von 200–300 kcal kombiniert mit ausreichend Protein empfohlen.`;
+    } else if(goal==='erhöhen'){
+      if(r>0.3) recommendation=`Gut: Mehr Kalorien zeigen Wirkung auf dein Gewicht. Erhöhe schrittweise um 200–300 kcal über deinen aktuellen Ø von ${avgKcal} kcal, um kontrollierten Aufbau zu fördern.`;
+      else recommendation=`Der Zusammenhang ist schwach. Erhöhe die Kalorienzufuhr langsam und achte auf ausreichend Protein (≥1,6g/kg) für Muskelaufbau.`;
+    } else {
+      if(r>0.3) recommendation=`Halte deinen Kalorienintake konstant bei Ø ${avgKcal} kcal/Tag. Starke Schwankungen nach oben dürften sich ${lagText} im Gewicht bemerkbar machen.`;
+      else recommendation=`Dein Gewicht ist relativ stabil. Achte auf Konsistenz im Kalorienintake um das Gewicht langfristig zu halten.`;
+    }
+  }
+
+  const goalLabel={'reduzieren':'🎯 Ziel: Gewicht reduzieren','erhöhen':'🎯 Ziel: Gewicht erhöhen','halten':'🎯 Ziel: Gewicht halten'}[goal];
 
   if(resEl) resEl.innerHTML=`
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--muted);">KORRELATION (PEARSON r)</div>
-        <div style="font-size:28px;font-weight:800;color:${color};">${r>=0?'+':''}${r}</div>
-      </div>
-      <div style="font-size:13px;margin-bottom:6px;"><span style="color:${color};font-weight:700;">${strength.charAt(0).toUpperCase()+strength.slice(1)} ${direction} Zusammenhang</span></div>
-      <div style="font-size:12px;color:var(--muted);">${interpretation}</div>
-      <div style="margin-top:10px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;">${chartPairs.length} Datenpunkte · bester Lag: ${bestLag} ${bestLag===1?'Tag':'Tage'}</div>
+      ${absR>=0.2?`<div style="font-size:15px;font-weight:700;color:${color};margin-bottom:4px;">${strength} ${direction} Zusammenhang</div>`:''}
+      ${absR>=0.2?`<div style="font-size:13px;color:var(--text);margin-bottom:10px;">Dein Gewicht reagiert tendenziell <b>${lagText}</b> auf veränderten Kalorienintake.</div>`:`<div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Kein erkennbarer Zusammenhang zwischen Kalorien und Gewicht.</div>`}
+      <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);">KORRELATION (PEARSON r: ${rStr})</div>
+      ${recommendation?`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">${goalLabel} · EMPFEHLUNG</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.5;">${recommendation}</div>
+      </div>`:''}
     </div>`;
 
   // Build dual-axis chart
@@ -3158,9 +3188,9 @@ function renderKorrelationChart(){
     data:{
       labels:chartPairs.map(p=>fmtShort(p.date)),
       datasets:[
-        {label:'Gewicht (kg)',data:wVals,borderColor:'#47c8ff',backgroundColor:'rgba(71,200,255,.06)',pointRadius:chartPairs.length>60?0:2,tension:.3,fill:true,order:3,yAxisID:'yW'},
-        {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
-        {label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',borderDash:[4,2],spanGaps:true}
+        {label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.25)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:3,yAxisID:'yW'},
+        {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
+        {label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',borderDash:[5,3],spanGaps:true}
       ]
     },
     options:{
