@@ -451,6 +451,27 @@
     .plan-card:hover,.shared-person-card:hover{border-color:rgba(71,200,255,.44);}
     .data-group-header,.data-entry-row,.year-header{transition:background .16s ease,color .16s ease;}
     .data-group-header:hover,.data-entry-row:hover{background:var(--hover);}
+    .data-group-header > div:last-child,
+    .year-header > span:last-child{
+      width:34px;
+      min-width:34px;
+      height:34px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:10px;
+      color:var(--muted)!important;
+      font-family:Arial,sans-serif;
+      font-size:15px!important;
+      line-height:1;
+      background:rgba(255,255,255,.018);
+      transition:background .16s ease,color .16s ease,transform .16s ease;
+    }
+    .data-group-header:hover > div:last-child,
+    .year-header:hover > span:last-child{
+      background:var(--hover);
+      color:var(--text)!important;
+    }
     .data-entry-row{min-height:56px;}
     .data-entry-date{line-height:1.25;}
     .data-entry-vals{gap:8px 12px;}
@@ -1507,7 +1528,12 @@ function toggleYearGroup(id){
   const open=body.classList.toggle('open');
   if(arr)arr.textContent=open?'▼':'▶';
 }
-function toggleGroup(id){ const b=g(id); b.classList.toggle('open'); const a=g(id.replace('g-','g-arr-')); if(a) a.textContent=b.classList.contains('open')?'\u25bc':'\u25b6'; }
+function toggleGroup(id){
+  const b=g(id); if(!b) return;
+  b.classList.toggle('open');
+  const a=g(id+'-arr') || g(id.replace('g-','g-arr-'));
+  if(a) a.textContent=b.classList.contains('open')?'\u25bc':'\u25b6';
+}
 
 // ── SHOW/HIDE SCREENS ──
 function showScreen(name){
