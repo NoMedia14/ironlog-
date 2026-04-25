@@ -1509,6 +1509,8 @@ let timerRunning=false, timerSecs=0, timerTarget=null, timerStart=null, timerInt
 let appReady=false;
 
 const g = id => document.getElementById(id);
+const GROUP_ARROW_OPEN = '▾';
+const GROUP_ARROW_CLOSED = '▸';
 function today(){ return new Date().toISOString().split('T')[0]; }
 function nowTime(){ const n=new Date(); return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); }
 function fmtD(ds,opts){ return new Date(ds+'T12:00:00').toLocaleDateString('de-DE',opts); }
@@ -1526,13 +1528,13 @@ function toggleYearGroup(id){
   const arr=g('yarr-'+id.replace('yg-',''));
   if(!body)return;
   const open=body.classList.toggle('open');
-  if(arr)arr.textContent=open?'▼':'▶';
+  if(arr)arr.textContent=open?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED;
 }
 function toggleGroup(id){
   const b=g(id); if(!b) return;
   b.classList.toggle('open');
   const a=g(id+'-arr') || g(id.replace('g-','g-arr-'));
-  if(a) a.textContent=b.classList.contains('open')?'\u25bc':'\u25b6';
+  if(a) a.textContent=b.classList.contains('open')?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED;
 }
 
 // ── SHOW/HIDE SCREENS ──
@@ -2656,7 +2658,7 @@ function renderLog(){
         </div><span style="color:var(--muted)">▶</span></div>`;
       }).join('');
       const isFirst=(yr===yearKeys[0]&&mi===0);
-      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('${gIdx}')"><div><div class="data-group-title" style="color:var(--accent3);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einheiten</div></div><div id="${gIdx}-arr">${isFirst?'▼':'▶'}</div></div><div class="data-group-body${isFirst?' open':''}" id="${gIdx}">${rows}</div></div>`;
+      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('${gIdx}')"><div><div class="data-group-title" style="color:var(--accent3);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einheiten</div></div><div id="${gIdx}-arr">${isFirst?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</div></div><div class="data-group-body${isFirst?' open':''}" id="${gIdx}">${rows}</div></div>`;
     }).join('');
     const total=Object.values(months).reduce((a,v)=>a+v.length,0);
     const isCurrent=(yr===yearKeys[0]);
@@ -2666,7 +2668,7 @@ function renderLog(){
           <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span>
           <span style="font-size:12px;color:var(--muted);">${total} Einheiten</span>
         </div>
-        <span id="yarr-log-${yr}" style="color:var(--muted);font-size:12px;">${isCurrent?'▼':'▶'}</span>
+        <span id="yarr-log-${yr}" style="color:var(--muted);font-size:12px;">${isCurrent?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</span>
       </div>
       <div class="year-body${isCurrent?' open':''}" id="yb-log-${yr}">${monthsHtml}</div>
     </div>`;
@@ -2834,7 +2836,7 @@ function renderPlans(){
           <span style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted);">📦 ARCHIV</span>
           <span style="font-size:12px;color:var(--muted);">${archived.length} Pläne</span>
         </div>
-        <span id="yarr-plan-archive-group" style="color:var(--muted);font-size:12px;">▶</span>
+        <span id="yarr-plan-archive-group" style="color:var(--muted);font-size:12px;">${GROUP_ARROW_CLOSED}</span>
       </div>
       <div class="year-body" id="yb-plan-archive-group">${archived.map(cardHTML).join('')}</div>
     </div>`;
@@ -3491,7 +3493,7 @@ function renderWeightGroups(){
         return`<div class="data-entry-row" onclick='openWeightModal(${JSON.stringify(e)})'><div><div class="data-entry-date">${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short'})}</div><div class="data-entry-vals">${vals.map(v=>`<span>${v}</span>`).join('')}</div></div><span style="color:var(--muted)">✏️</span></div>`;
       }).join('');
       const isFirst=(yr===yearKeys[0]&&mi===0);
-      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('wg-${gIdx}')"><div><div class="data-group-title" style="color:var(--accent4);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Messungen</div></div><div id="wg-arr-${gIdx}">${isFirst?'▼':'▶'}</div></div><div class="data-group-body${isFirst?' open':''}" id="wg-${gIdx}">${rows}</div></div>`;
+      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('wg-${gIdx}')"><div><div class="data-group-title" style="color:var(--accent4);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Messungen</div></div><div id="wg-arr-${gIdx}">${isFirst?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</div></div><div class="data-group-body${isFirst?' open':''}" id="wg-${gIdx}">${rows}</div></div>`;
     }).join('');
     const totalEntries=Object.values(months).flat().length;
     const isCurrentYear=(yr===yearKeys[0]);
@@ -3501,7 +3503,7 @@ function renderWeightGroups(){
           <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span>
           <span style="font-size:12px;color:var(--muted);">${totalEntries} Einträge</span>
         </div>
-        <span id="yarr-w-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?'▼':'▶'}</span>
+        <span id="yarr-w-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</span>
       </div>
       <div class="year-body${isCurrentYear?' open':''}" id="yb-w-${yr}">${monthsHtml}</div>
     </div>`;
@@ -3668,7 +3670,7 @@ function renderBPGroups(){
       const entries=[...months[mk]].sort((a,b)=>b.date===a.date?(b.time||'').localeCompare(a.time||''):b.date.localeCompare(a.date));
       const rows=entries.map(e=>`<div class="data-entry-row" onclick='openBPModal(${JSON.stringify(e)})'><div><div class="data-entry-date">${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short'})}${e.time?' · '+e.time:''}</div><div class="data-entry-vals"><span><span class="bp-sys">${e.sys}</span>/<span class="bp-dia">${e.dia}</span> mmHg</span>${e.note?`<span style="color:var(--muted);font-size:11px;">${e.note}</span>`:''}</div></div><span style="color:var(--muted)">✏️</span></div>`).join('');
       const isFirst=(yr===yearKeys[0]&&mi===0);
-      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('bpg-${idx}')"><div><div class="data-group-title" style="color:var(--accent2);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Messungen</div></div><div id="bpg-arr-${idx}">${isFirst?'▼':'▶'}</div></div><div class="data-group-body${isFirst?' open':''}" id="bpg-${idx}">${rows}</div></div>`;
+      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('bpg-${idx}')"><div><div class="data-group-title" style="color:var(--accent2);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Messungen</div></div><div id="bpg-arr-${idx}">${isFirst?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</div></div><div class="data-group-body${isFirst?' open':''}" id="bpg-${idx}">${rows}</div></div>`;
     }).join('');
     const total=Object.values(months).flat().length;
     const isCurrentYear=(yr===yearKeys[0]);
@@ -3678,7 +3680,7 @@ function renderBPGroups(){
           <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span>
           <span style="font-size:12px;color:var(--muted);">${total} Einträge</span>
         </div>
-        <span id="yarr-bp-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?'▼':'▶'}</span>
+        <span id="yarr-bp-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</span>
       </div>
       <div class="year-body${isCurrentYear?' open':''}" id="yb-bp-${yr}">${monthsHtml}</div>
     </div>`;
@@ -4356,10 +4358,10 @@ function renderSleepGroups(){
           <div class="data-entry-vals"><span>😴 <b>${h}h ${m}min</b></span>${r?`<span style="color:${r.color};">${r.emoji} ${r.label}</span>`:''}</div>
         </div><span style="color:var(--muted)">✏️</span></div>`;
       }).join('');
-      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('slg-${idx}')"><div><div class="data-group-title" style="color:#c847ff;">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einträge</div></div><div id="slg-arr-${idx}">${isFirst?'▼':'▶'}</div></div><div class="data-group-body${isFirst?' open':''}" id="slg-${idx}">${rows}</div></div>`;
+      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('slg-${idx}')"><div><div class="data-group-title" style="color:#c847ff;">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einträge</div></div><div id="slg-arr-${idx}">${isFirst?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</div></div><div class="data-group-body${isFirst?' open':''}" id="slg-${idx}">${rows}</div></div>`;
     }).join('');
     const total=Object.values(months).flat().length, isCurrentYear=(yri===0);
-    return`<div class="year-group" id="yg-sl-${yr}"><div class="year-header" onclick="toggleYearGroup('yg-sl-${yr}')"><div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span><span style="font-size:12px;color:var(--muted);">${total} Einträge</span></div><span id="yarr-sl-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?'▼':'▶'}</span></div><div class="year-body${isCurrentYear?' open':''}" id="yb-sl-${yr}">${monthsHtml}</div></div>`;
+    return`<div class="year-group" id="yg-sl-${yr}"><div class="year-header" onclick="toggleYearGroup('yg-sl-${yr}')"><div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span><span style="font-size:12px;color:var(--muted);">${total} Einträge</span></div><span id="yarr-sl-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</span></div><div class="year-body${isCurrentYear?' open':''}" id="yb-sl-${yr}">${monthsHtml}</div></div>`;
   }).join('');
 }
 
@@ -4554,10 +4556,10 @@ function renderMoodGroups(){
           <div class="data-entry-vals"><span style="color:${r.color};">${r.emoji} <b>${r.label}</b></span>${e.note?`<span style="font-size:11px;color:var(--muted);">${e.note}</span>`:''}</div>
         </div><span style="color:var(--muted)">✏️</span></div>`;
       }).join('');
-      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('mdg-${idx}')"><div><div class="data-group-title" style="color:#ff9f47;">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einträge</div></div><div id="mdg-arr-${idx}">${isFirst?'▼':'▶'}</div></div><div class="data-group-body${isFirst?' open':''}" id="mdg-${idx}">${rows}</div></div>`;
+      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('mdg-${idx}')"><div><div class="data-group-title" style="color:#ff9f47;">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einträge</div></div><div id="mdg-arr-${idx}">${isFirst?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</div></div><div class="data-group-body${isFirst?' open':''}" id="mdg-${idx}">${rows}</div></div>`;
     }).join('');
     const total=Object.values(months).flat().length, isCurrentYear=(yri===0);
-    return`<div class="year-group" id="yg-md-${yr}"><div class="year-header" onclick="toggleYearGroup('yg-md-${yr}')"><div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span><span style="font-size:12px;color:var(--muted);">${total} Einträge</span></div><span id="yarr-md-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?'▼':'▶'}</span></div><div class="year-body${isCurrentYear?' open':''}" id="yb-md-${yr}">${monthsHtml}</div></div>`;
+    return`<div class="year-group" id="yg-md-${yr}"><div class="year-header" onclick="toggleYearGroup('yg-md-${yr}')"><div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span><span style="font-size:12px;color:var(--muted);">${total} Einträge</span></div><span id="yarr-md-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</span></div><div class="year-body${isCurrentYear?' open':''}" id="yb-md-${yr}">${monthsHtml}</div></div>`;
   }).join('');
 }
 
