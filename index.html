@@ -210,7 +210,7 @@
 
     /* WEEK COMPARE */
     .week-compare{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
-    .week-row{display:grid;grid-template-columns:78px 1fr 1fr 1fr 1fr;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .week-row{display:grid;grid-template-columns:68px 1fr 1fr 1fr 1fr 1fr;gap:4px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;}
     .week-row:last-child{border-bottom:none;}
     .week-row.wh{font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:600;padding-bottom:10px;}
     .week-lbl{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:var(--accent3);}
@@ -755,8 +755,7 @@
           <button class="fbtn wmet active" onclick="switchWMetric('weight',this)">&#x2696;&#xFE0F; Gewicht</button>
           <button class="fbtn wmet" onclick="switchWMetric('bauch',this)">&#x1F4CF; Bauch</button>
           <button class="fbtn wmet" onclick="switchWMetric('hueft',this)">&#x1F4D0; H&#xFC;fte</button>
-          <button class="fbtn wmet" onclick="switchWMetric('kcal',this)">&#x1F525; Intake</button>
-          <button class="fbtn wmet" onclick="switchWMetric('kcalv',this)">&#x26A1; Verbrauch</button>
+          <button class="fbtn wmet" onclick="switchWMetric('kcal',this)">&#x1F525; Kalorien</button>
           <button class="fbtn wmet" onclick="switchWMetric('korrelation',this)">&#x1F4C8; Korrelation</button>
         </div>
         <canvas id="weightChart" height="200"></canvas>
@@ -1186,8 +1185,7 @@
     <div class="field"><label>Datum</label><input type="date" id="w-date"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="field"><label>Gewicht (kg)</label><input type="number" id="w-kg" placeholder="82.5" step="0.1" min="0"></div>
-      <div class="field"><label>🔥 Kalorienintake (kcal)</label><input type="number" id="w-kcal" placeholder="2200" min="0"></div>
-      <div class="field"><label>⚡ Kalorienverbrauch (kcal)</label><input type="number" id="w-kcalv" placeholder="2500" min="0"></div>
+      <div class="field"><label>Kalorien (kcal)</label><input type="number" id="w-kcal" placeholder="2200" min="0"></div>
       <div class="field"><label>Bauchumfang (cm)</label><input type="number" id="w-bauch" placeholder="88" step="0.1" min="0"></div>
       <div class="field"><label>Hüftumfang (cm)</label><input type="number" id="w-hueft" placeholder="98" step="0.1" min="0"></div>
     </div>
@@ -1517,7 +1515,7 @@ function today(){ return new Date().toISOString().split('T')[0]; }
 function nowTime(){ const n=new Date(); return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); }
 function fmtD(ds,opts){ return new Date(ds+'T12:00:00').toLocaleDateString('de-DE',opts); }
 function fmtShort(ds){ return fmtD(ds,{day:'2-digit',month:'short'}); }
-function weekMon(ds){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()-((d.getDay()+6)%7)); return d.toISOString().split('T')[0]; }
+function weekMon(ds){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()-((d.getDay()+2)%7)); return d.toISOString().split('T')[0]; } // groups by Friday
 function weekLabel(ds){ return fmtD(weekMon(ds),{day:'2-digit',month:'short'}); }
 function monthKey(ds){ return ds.substring(0,7); }
 function monthLabel(mk){ const[y,m]=mk.split('-'); return new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('de-DE',{month:'long',year:'numeric'}); }
@@ -3208,13 +3206,13 @@ function setBPTimeFilter(f, btn){
   renderBPChart();
 }
 function renderWeight(){renderWeightChart();renderWeekCompare();renderWeightGroups();}
-function openWeightModal(entry=null){ editingWeightId=entry?entry.id:null; g('w-modal-ttl').textContent=entry?'MESSUNG BEARBEITEN':'MESSUNG ERFASSEN'; g('w-date').value=entry?entry.date:today(); g('w-kg').value=entry?(entry.weight||''):''; g('w-bauch').value=entry?(entry.bauch||''):''; g('w-hueft').value=entry?(entry.hueft||''):''; g('w-kcal').value=entry?(entry.kcal||''):''; g('w-kcalv').value=entry?(entry.kcalv||''):''; g('w-del-btn').style.display=entry?'block':'none'; g('modal-weight').classList.add('open'); }
+function openWeightModal(entry=null){ editingWeightId=entry?entry.id:null; g('w-modal-ttl').textContent=entry?'MESSUNG BEARBEITEN':'MESSUNG ERFASSEN'; g('w-date').value=entry?entry.date:today(); g('w-kg').value=entry?(entry.weight||''):''; g('w-bauch').value=entry?(entry.bauch||''):''; g('w-hueft').value=entry?(entry.hueft||''):''; g('w-kcal').value=entry?(entry.kcal||''):''; g('w-del-btn').style.display=entry?'block':'none'; g('modal-weight').classList.add('open'); }
 async function saveWeightEntry(){
-  const date=g('w-date').value,weight=g('w-kg').value,bauch=g('w-bauch').value,hueft=g('w-hueft').value,kcal=g('w-kcal').value,kcalv=g('w-kcalv').value;
+  const date=g('w-date').value,weight=g('w-kg').value,bauch=g('w-bauch').value,hueft=g('w-hueft').value,kcal=g('w-kcal').value;
   if(!date){alert('Bitte Datum.');return;}
-  if(!weight&&!bauch&&!hueft&&!kcal&&!kcalv){alert('Mindestens ein Feld.');return;}
+  if(!weight&&!bauch&&!hueft&&!kcal){alert('Mindestens ein Feld.');return;}
   if(!currentUser){showToast('Nicht eingeloggt!',true);return;}
-  const entry={user_id:currentUser.id,date,weight:weight?parseFloat(weight):null,bauch:bauch?parseFloat(bauch):null,hueft:hueft?parseFloat(hueft):null,kcal:kcal?parseInt(kcal):null,kcalv:kcalv?parseInt(kcalv):null};
+  const entry={user_id:currentUser.id,date,weight:weight?parseFloat(weight):null,bauch:bauch?parseFloat(bauch):null,hueft:hueft?parseFloat(hueft):null,kcal:kcal?parseInt(kcal):null};
   setSyncState('syncing');
   let res;
   if(editingWeightId){
@@ -3258,8 +3256,8 @@ function renderWeightChart(){
   if(kWrap) kWrap.style.display='none';
 
   const m=currentWMetric;
-  const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorienintake (kcal)',kcalv:'Kalorienverbrauch (kcal)'};
-  const colors={weight:'#47c8ff',bauch:'#47ffb8',hueft:'#c847ff',kcal:'#ff9f47',kcalv:'#ff6b6b'};
+  const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorien (kcal)'};
+  const colors={weight:'#47c8ff',bauch:'#47ffb8',hueft:'#c847ff',kcal:'#ff9f47'};
   const filtered=filterByTime(weightEntries, wTimeFilter);
   const pts=filtered.filter(e=>e[m]).map(e=>({date:e.date,val:parseFloat(e[m])})).sort((a,b)=>a.date.localeCompare(b.date));
   const maVals = m!=='kcal' ? calcMA(pts.map(p=>p.val),7) : calcMA(pts.map(p=>p.val),7);
@@ -3284,11 +3282,10 @@ function pearson(xs, ys){
 function renderKorrelationChart(){
   // Build date-indexed maps from filtered entries
   const filtered = filterByTime(weightEntries, wTimeFilter);
-  const wMap={}, kMap={}, kvMap={};
+  const wMap={}, kMap={};
   filtered.forEach(e=>{
     if(e.weight) wMap[e.date]=parseFloat(e.weight);
     if(e.kcal)   kMap[e.date]=parseFloat(e.kcal);
-    if(e.kcalv)  kvMap[e.date]=parseFloat(e.kcalv);
   });
 
   // Find dates with BOTH weight and kcal
@@ -3352,10 +3349,6 @@ function renderKorrelationChart(){
   let recommendation='';
   if(absR>=0.2){
     const avgKcal=Math.round(chartPairs.reduce((a,p)=>a+p.k,0)/chartPairs.length);
-    const vPairs=chartPairs.filter(p=>kvMap[p.date]);
-    const avgVerbrauch=vPairs.length?Math.round(vPairs.reduce((a,p)=>a+kvMap[p.date],0)/vPairs.length):null;
-    const balanceStr=avgVerbrauch?` (Verbrauch Ø ${avgVerbrauch} kcal, Bilanz: ${avgKcal>avgVerbrauch?'+':''}${avgKcal-avgVerbrauch} kcal/Tag)`:'';
-
 
     // Stagnation: did weight change in last 14 days?
     const last14=chartPairs.slice(-14);
@@ -3419,7 +3412,7 @@ function renderKorrelationChart(){
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
       ${absR>=0.2?`<div style="font-size:15px;font-weight:700;color:${color};margin-bottom:4px;">${strength} ${direction} Zusammenhang</div>`:''}
       ${absR>=0.2?`<div style="font-size:13px;color:var(--text);margin-bottom:10px;">Dein Gewicht reagiert tendenziell <b>${lagText}</b> auf veränderten Kalorienintake.</div>`:`<div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Kein erkennbarer Zusammenhang zwischen Kalorien und Gewicht.</div>`}
-      <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);">KORRELATION (PEARSON r: ${rStr})${balanceStr}</div>
+      <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);">KORRELATION (PEARSON r: ${rStr})</div>
       ${recommendation?`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">${goalLabel} · EMPFEHLUNG</div>
         <div style="font-size:12px;color:var(--text);line-height:1.5;">${recommendation}</div>
@@ -3445,8 +3438,7 @@ function renderKorrelationChart(){
       datasets:[
         {label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:3,yAxisID:'yW'},
         {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
-        {label:'Ø Intake',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true},
-        {label:'Ø Verbrauch',data:calcMA(chartPairs.map(p=>kvMap[p.date]||null),7),borderColor:'#ff6b6b',borderWidth:1.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',borderDash:[3,2],spanGaps:true}
+        {label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true}
       ]
     },
     options:{
@@ -3498,7 +3490,6 @@ function renderWeightGroups(){
         if(e.bauch)vals.push(`📏 <b>${e.bauch} cm</b>`);
         if(e.hueft)vals.push(`📐 <b>${e.hueft} cm</b>`);
         if(e.kcal)vals.push(`🔥 <b>${e.kcal} kcal</b>`);
-        if(e.kcalv)vals.push(`⚡ <b>${e.kcalv} kcal</b>`);
         return`<div class="data-entry-row" onclick='openWeightModal(${JSON.stringify(e)})'><div><div class="data-entry-date">${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short'})}</div><div class="data-entry-vals">${vals.map(v=>`<span>${v}</span>`).join('')}</div></div><span style="color:var(--muted)">✏️</span></div>`;
       }).join('');
       const isFirst=(yr===yearKeys[0]&&mi===0);
