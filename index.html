@@ -3239,23 +3239,23 @@ function switchWMetric(m,btn){
   renderWeightChart();
 }
 function renderWeightChart(){
-  if(wtChartI){try{wtChartI.destroy();}catch(e){} wtChartI=null;}
-  const oldW=g('weightChart');
-  if(!oldW)return;
-  const freshW=document.createElement('canvas');
-  freshW.id='weightChart'; freshW.height=200;
-  oldW.parentNode.replaceChild(freshW,oldW);
-
-  // Handle correlation view
+  // Handle correlation view first (before touching weightChart canvas)
   const kWrap = g('korrelation-wrap');
   if(currentWMetric==='korrelation'){
-    g('weightChart').style.display='none';
+    const wc=g('weightChart'); if(wc) wc.style.display='none';
     if(kWrap) kWrap.style.display='block';
     renderKorrelationChart();
     return;
   }
-  g('weightChart').style.display='';
   if(kWrap) kWrap.style.display='none';
+
+  if(wtChartI){try{wtChartI.destroy();}catch(e){} wtChartI=null;}
+  const oldW=g('weightChart');
+  if(!oldW)return;
+  oldW.style.display='';
+  const freshW=document.createElement('canvas');
+  freshW.id='weightChart'; freshW.height=200;
+  oldW.parentNode.replaceChild(freshW,oldW);
 
   const m=currentWMetric;
   const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorienintake (kcal)',kcalv:'Kalorienverbrauch (kcal)'};
