@@ -3361,12 +3361,14 @@ function renderKorrelationChart(){
   else if(trend>0.5) goal='erhöhen';
 
   // Smart concrete recommendation
+  const avgKcalAll=Math.round(chartPairs.reduce((a,p)=>a+p.k,0)/chartPairs.length);
+  const vPairsAll=chartPairs.filter(p=>kvMap[p.date]);
+  const avgVerbrauchAll=vPairsAll.length?Math.round(vPairsAll.reduce((a,p)=>a+kvMap[p.date],0)/vPairsAll.length):null;
+  const balanceStr=avgVerbrauchAll?` (Verbrauch Ø ${avgVerbrauchAll} kcal, Bilanz: ${avgKcalAll>avgVerbrauchAll?'+':''}${avgKcalAll-avgVerbrauchAll} kcal/Tag)`:'';
   let recommendation='';
   if(absR>=0.2){
-    const avgKcal=Math.round(chartPairs.reduce((a,p)=>a+p.k,0)/chartPairs.length);
-    const vPairs=chartPairs.filter(p=>kvMap[p.date]);
-    const avgVerbrauch=vPairs.length?Math.round(vPairs.reduce((a,p)=>a+kvMap[p.date],0)/vPairs.length):null;
-    const balanceStr=avgVerbrauch?` (Verbrauch Ø ${avgVerbrauch} kcal, Bilanz: ${avgKcal>avgVerbrauch?'+':''}${avgKcal-avgVerbrauch} kcal/Tag)`:'';
+    const avgKcal=avgKcalAll;
+    const avgVerbrauch=avgVerbrauchAll;
 
 
     // Stagnation: did weight change in last 14 days?
