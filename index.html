@@ -3291,7 +3291,7 @@ function renderKorrelationChart(){
   filtered.forEach(e=>{
     if(e.weight) wMap[e.date]=parseFloat(e.weight);
     if(e.kcal)   kMap[e.date]=parseFloat(e.kcal);
-    if(e.kcalv)  kvMap[e.date]=parseFloat(e.kcalv);
+    if(e.kcalv&&!isNaN(parseFloat(e.kcalv))) kvMap[e.date]=parseFloat(e.kcalv);
   });
 
   // Check if we have any kcal data at all
@@ -3460,7 +3460,7 @@ function renderKorrelationChart(){
         {label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:3,yAxisID:'yW'},
         {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
         {label:'Ø Intake',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true},
-        {label:'Ø Verbrauch',data:calcMA(chartPairs.map(p=>kvMap[p.date]||null),7),borderColor:'#ff6b6b',borderWidth:1.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',borderDash:[3,2],spanGaps:true}
+        {label:'Ø Verbrauch',data:calcMA(chartPairs.map(p=>kvMap[p.date]??null),7),borderColor:'#ff6b6b',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true}
       ]
     },
     options:{
