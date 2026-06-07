@@ -3329,7 +3329,7 @@ function renderKorrelationChart(){
     if(wMap[d]===undefined) return;
     const lagDate=new Date(d); lagDate.setDate(lagDate.getDate()-bestLag);
     const lagStr=lagDate.toISOString().split('T')[0];
-    if(kMap[lagStr]!==undefined) chartPairs.push({date:d, w:wMap[d], k:kMap[lagStr]});
+    if(kMap[lagStr]!==undefined) chartPairs.push({date:d, kDate:lagStr, w:wMap[d], k:kMap[lagStr], kv:kvMap[lagStr] ?? null});
   });
 
   // Render result box
@@ -3362,8 +3362,8 @@ function renderKorrelationChart(){
 
   // Smart concrete recommendation
   const avgKcalAll=Math.round(chartPairs.reduce((a,p)=>a+p.k,0)/chartPairs.length);
-  const vPairsAll=chartPairs.filter(p=>kvMap[p.date]);
-  const avgVerbrauchAll=vPairsAll.length?Math.round(vPairsAll.reduce((a,p)=>a+kvMap[p.date],0)/vPairsAll.length):null;
+  const vPairsAll=chartPairs.filter(p=>p.kv!=null&&!isNaN(p.kv));
+  const avgVerbrauchAll=vPairsAll.length?Math.round(vPairsAll.reduce((a,p)=>a+p.kv,0)/vPairsAll.length):null;
   const balanceStr=avgVerbrauchAll?` (Verbrauch Ø ${avgVerbrauchAll} kcal, Bilanz: ${avgKcalAll>avgVerbrauchAll?'+':''}${avgKcalAll-avgVerbrauchAll} kcal/Tag)`:'';
   let recommendation='';
   if(absR>=0.2){
@@ -3451,6 +3451,11 @@ function renderKorrelationChart(){
   const kSmooth=calcMA(kRaw,7);
   const wVals=chartPairs.map(p=>p.w);
   const wSmooth=calcMA(wVals,7);
+  const kvRaw=chartPairs.map(p=>p.kv);
+  const kvSmooth=kvRaw.map((_,i)=>{
+    const slice=kvRaw.slice(Math.max(0,i-6),i+1).filter(v=>v!=null&&!isNaN(v));
+    return slice.length?slice.reduce((a,b)=>a+b,0)/slice.length:null;
+  });
 
   korrelationChartI=new Chart(fresh,{
     type:'line',
@@ -3460,7 +3465,7 @@ function renderKorrelationChart(){
         {label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:3,yAxisID:'yW'},
         {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
         {label:'Ø Intake',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true},
-        {label:'Ø Verbrauch',data:calcMA(chartPairs.map(p=>kvMap[p.date]??null),7),borderColor:'#ff6b6b',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true}
+        {label:'Ø Verbrauch',data:kvSmooth,borderColor:'#ff6b6b',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true}
       ]
     },
     options:{
