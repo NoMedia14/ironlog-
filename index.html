@@ -3282,6 +3282,9 @@ function pearson(xs, ys){
 }
 
 function renderKorrelationChart(){
+  const resEl=g('korrelation-result');
+  const chartEl=g('korrelationChart');
+
   // Build date-indexed maps from filtered entries
   const filtered = filterByTime(weightEntries, wTimeFilter);
   const wMap={}, kMap={}, kvMap={};
@@ -3290,6 +3293,16 @@ function renderKorrelationChart(){
     if(e.kcal)   kMap[e.date]=parseFloat(e.kcal);
     if(e.kcalv)  kvMap[e.date]=parseFloat(e.kcalv);
   });
+
+  // Check if we have any kcal data at all
+  if(!Object.keys(kMap).length){
+    if(resEl) resEl.innerHTML=`<div style="text-align:center;padding:24px 16px;color:var(--muted);font-size:13px;">
+      Noch keine Kalorien-Daten vorhanden.<br><br>
+      Trage täglich deinen Kalorienintake (🔥) in der Gewichtsmessung ein,<br>
+      damit die Korrelation berechnet werden kann.
+    </div>`;
+    return;
+  }
 
   // Find dates with BOTH weight and kcal
   const dates=[...new Set([...Object.keys(wMap),...Object.keys(kMap)])].sort();
@@ -3320,7 +3333,6 @@ function renderKorrelationChart(){
   });
 
   // Render result box
-  const resEl=g('korrelation-result');
   const minPairs = wTimeFilter==='14d' ? 5 : 14;
   if(chartPairs.length<minPairs){
     if(resEl) resEl.innerHTML=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Zu wenig Datenpunkte – mindestens ${minPairs} Tage mit Gewicht UND Kalorien benötigt.<br>Aktuell: ${chartPairs.length} Tage.</div>`;
