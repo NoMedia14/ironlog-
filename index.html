@@ -3042,26 +3042,60 @@ function jsEscape(v){
 function sessionViewId(s){
   return String(s.id||`${s.date}|${s.name||'Training'}`);
 }
+function dateKey(v){
+  if(!v)return '';
+  const raw=String(v).slice(0,10);
+  const d=new Date(raw+'T12:00:00');
+  if(Number.isNaN(d.getTime()))return raw;
+  return d.toISOString().slice(0,10);
+}
 function exerciseRule(name){
   return _exerciseViewRules[name]||{};
 }
-function sessionsWithExercise(name, baseSessions=sessions){
-  return baseSessions.filter(s=>(s.exercises||[]).some(e=>e.name===name));
-}
-function visibleSessionsForExercise(name, baseSessions=sessions){
+function isSessionVisibleForExercise(name,s){
   const rule=exerciseRule(name);
   const ignored=new Set(rule.ignoredSessionIds||[]);
-  return sessionsWithExercise(name,baseSessions).filter(s=>{
-    if(ignored.has(sessionViewId(s))) return false;
-    if(rule.resetDate && s.date<rule.resetDate) return false;
+  if(ignored.has(sessionViewId(s)))return false;
+  if(rule.resetDate&&dateKey(s.date)<dateKey(rule.resetDate))return false;
+  return true;
+}
+function buildExerciseViewIndex(baseSessions=sessions){
+  const map=new Map();
+  const ruleCache=new Map();
+  const visibleByRule=(name,s)=>{
+    if(!ruleCache.has(name)){
+      const rule=exerciseRule(name);
+      ruleCache.set(name,{ignored:new Set(rule.ignoredSessionIds||[]),resetDate:dateKey(rule.resetDate)});
+    }
+    const rule=ruleCache.get(name);
+    if(rule.ignored.has(sessionViewId(s)))return false;
+    if(rule.resetDate&&dateKey(s.date)<rule.resetDate)return false;
     return true;
+  };
+  baseSessions.forEach(s=>{
+    const names=[...new Set((s.exercises||[]).map(e=>e.name).filter(Boolean))];
+    names.forEach(name=>{
+      if(!map.has(name))map.set(name,{sessions:[],visible:[]});
+      const item=map.get(name);
+      item.sessions.push(s);
+      if(visibleByRule(name,s))item.visible.push(s);
+    });
   });
+  return map;
+}
+function sessionsWithExercise(name, baseSessions=sessions){
+  return (buildExerciseViewIndex(baseSessions).get(name)?.sessions)||[];
+}
+function visibleSessionsForExercise(name, baseSessions=sessions){
+  return (buildExerciseViewIndex(baseSessions).get(name)?.visible)||[];
+}
+function exerciseVisibleInStats(name,item){
+  const rule=exerciseRule(name);
+  return (item?.visible?.length||0)>0 || (!!rule.resetDate&&!rule.hidden);
 }
 function visibleExerciseNames(){
-  const allEx=sessions.flatMap(s=>s.exercises||[]);
-  return [...new Set(allEx.map(e=>e.name).filter(Boolean))]
-    .filter(n=>visibleSessionsForExercise(n).length>0)
-    .sort();
+  const index=buildExerciseViewIndex();
+  return [...index.keys()].filter(n=>exerciseVisibleInStats(n,index.get(n))).sort();
 }
 
 function resetExerciseFilter(){
@@ -3116,27 +3150,29 @@ function openExerciseFilter(){
 }
 
 function renderExerciseFilterList(){
-  const allEx = sessions.flatMap(s=>s.exercises||[]);
-  const names = [...new Set(allEx.map(e=>e.name).filter(Boolean))]
+  const index=buildExerciseViewIndex();
+  const names = [...index.keys()]
     .filter(n=>{
       const rule=exerciseRule(n);
-      return !(rule.hidden&&visibleSessionsForExercise(n).length===0);
+      return !(rule.hidden&&((index.get(n)?.visible?.length||0)===0));
     })
     .sort();
   const el = g('ex-filter-list');
   if(!names.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Keine Übungen in der Ansicht. Gelöschte Übungen erscheinen wieder, sobald du sie neu trainierst.</div>';return;}
   el.innerHTML = names.map((n,i)=>{
     const rule=exerciseRule(n);
-    const total=sessionsWithExercise(n).length;
-    const visibleCount=visibleSessionsForExercise(n).length;
+    const item=index.get(n)||{sessions:[],visible:[]};
+    const total=item.sessions.length;
+    const visibleCount=item.visible.length;
     const appearsAgain=rule.hidden&&visibleCount>0;
-    const status=visibleCount>0?(rule.resetDate?`sichtbar ab ${fmtD(rule.resetDate,{day:'2-digit',month:'short',year:'numeric'})}`:'sichtbar'):'aus Ansicht gelöscht';
-    const safe=jsEscape(n), label=htmlEscape(n), inputId=`ex-start-${i}`;
+    const resetLabel=rule.resetDate?fmtD(rule.resetDate,{day:'2-digit',month:'short',year:'numeric'}):'';
+    const status=appearsAgain?'neu erkannt':rule.resetDate?(visibleCount>0?`sichtbar ab ${resetLabel}`:`noch keine Einheit seit ${resetLabel}`):(visibleCount>0?'sichtbar':'aus Liste gelöscht');
+    const safe=htmlEscape(jsEscape(n)), label=htmlEscape(n), inputId=`ex-start-${i}`;
     return`<div class="exercise-view-row">
       <div class="exercise-view-main">
         <div>
           <div style="font-size:14px;font-weight:700;">${label}</div>
-          <div style="font-size:11px;color:var(--muted);">${visibleCount}/${total} Einheit${total!==1?'en':''} in Ansicht · ${appearsAgain?'neu erkannt':status}</div>
+          <div style="font-size:11px;color:var(--muted);">${visibleCount}/${total} Einheit${total!==1?'en':''} in Ansicht · ${status}</div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="restoreExerciseView('${safe}')" style="font-size:11px;${rule.resetDate||rule.hidden?'':'display:none;'}">Alles anzeigen</button>
       </div>
@@ -3195,13 +3231,13 @@ function updateProgressChart(){
   // Apply time filter
   let filteredSessions = [...sessions];
   if(_statsTimeFilter !== 'all') {
-    if(_statsTimeFilter==='14d'){const c=new Date();c.setDate(c.getDate()-14);const cs=c.toISOString().split('T')[0];filteredSessions=filteredSessions.filter(s=>s.date>=cs);}
+    if(_statsTimeFilter==='14d'){const c=new Date();c.setDate(c.getDate()-14);const cs=c.toISOString().split('T')[0];filteredSessions=filteredSessions.filter(s=>dateKey(s.date)>=cs);}
     const months={'1m':1,'3m':3,'6m':6,'1y':12}[_statsTimeFilter]||999;
     const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth()-months);
     const cutStr = cutoff.toISOString().split('T')[0];
-    filteredSessions = filteredSessions.filter(s=>s.date>=cutStr);
+    filteredSessions = filteredSessions.filter(s=>dateKey(s.date)>=cutStr);
   }
-  const allSessions = visibleSessionsForExercise(exName, filteredSessions).sort((a,b)=>a.date.localeCompare(b.date));
+  const allSessions = visibleSessionsForExercise(exName, filteredSessions).sort((a,b)=>dateKey(a.date).localeCompare(dateKey(b.date)));
   allSessions.forEach(s=>(s.exercises||[]).forEach(ex=>{
     if(ex.name===exName){
       const sets = ex.sets||[];
@@ -3225,7 +3261,16 @@ function updateProgressChart(){
 
   // ── Last 3 sessions table ──
   const last3 = pts.slice(-3).reverse();
-  if(!tbl||!last3.length){if(tbl)tbl.innerHTML='';return;}
+  if(!tbl||!last3.length){
+    if(tbl){
+      const rule=exerciseRule(exName);
+      const msg=rule.resetDate
+        ? `Noch keine Trainingsdaten seit ${fmtD(rule.resetDate,{day:'2-digit',month:'short',year:'numeric'})}.`
+        : 'Noch keine auswertbaren Trainingsdaten für diese Übung.';
+      tbl.innerHTML=`<div style="font-size:12px;color:var(--muted);padding:12px 0;">${msg}</div>`;
+    }
+    return;
+  }
   const rows = last3.map(p=>{
     const sets=p.ex.sets||[];
     const nSets=sets.length;
