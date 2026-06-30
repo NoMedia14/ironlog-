@@ -1283,7 +1283,7 @@
       <div class="modal-title">ÜBUNGEN ANSICHT</div>
       <button class="close-btn" onclick="closeModal('modal-ex-filter')">✕</button>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Setze Übungen für die Stats-Ansicht ab einem Datum neu oder entferne sie aus der Ansicht, bis du sie wieder trainierst. Gespeicherte Einheiten bleiben unverändert.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Setze Übungen für die Stats-Ansicht ab einem Datum neu oder lösche sie aus dieser Liste, bis du sie wieder trainierst. Gespeicherte Einheiten bleiben unverändert.</div>
     <div id="ex-filter-list" style="max-height:60vh;overflow-y:auto;"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
       <button class="btn btn-ghost" onclick="resetExerciseFilter()">Alle Regeln löschen</button>
@@ -3093,7 +3093,7 @@ function resetExerciseView(name){
   showToast(`"${name}" startet ab heute neu.`);
 }
 function removeExerciseFromView(name){
-  if(!confirm(`"${name}" aus der Stats-Ansicht löschen? Gespeicherte Einheiten bleiben erhalten.`))return;
+  if(!confirm(`"${name}" aus dieser Liste und der Stats-Ansicht löschen? Gespeicherte Einheiten bleiben erhalten.`))return;
   _exerciseViewRules[name]={
     hidden:true,
     ignoredSessionIds:sessionsWithExercise(name).map(sessionViewId)
@@ -3101,7 +3101,7 @@ function removeExerciseFromView(name){
   saveExerciseViewRules();
   renderExerciseFilterList();
   renderStats();
-  showToast(`"${name}" erscheint wieder, sobald du sie neu trainierst.`);
+  showToast(`"${name}" erscheint erst wieder, sobald du sie neu trainierst.`);
 }
 function restoreExerciseView(name){
   delete _exerciseViewRules[name];
@@ -3117,9 +3117,14 @@ function openExerciseFilter(){
 
 function renderExerciseFilterList(){
   const allEx = sessions.flatMap(s=>s.exercises||[]);
-  const names = [...new Set(allEx.map(e=>e.name).filter(Boolean))].sort();
+  const names = [...new Set(allEx.map(e=>e.name).filter(Boolean))]
+    .filter(n=>{
+      const rule=exerciseRule(n);
+      return !(rule.hidden&&visibleSessionsForExercise(n).length===0);
+    })
+    .sort();
   const el = g('ex-filter-list');
-  if(!names.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Keine Übungen vorhanden.</div>';return;}
+  if(!names.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Keine Übungen in der Ansicht. Gelöschte Übungen erscheinen wieder, sobald du sie neu trainierst.</div>';return;}
   el.innerHTML = names.map((n,i)=>{
     const rule=exerciseRule(n);
     const total=sessionsWithExercise(n).length;
@@ -3139,7 +3144,7 @@ function renderExerciseFilterList(){
         <input class="exercise-view-date" type="date" id="${inputId}" value="${rule.resetDate||''}">
         <button class="btn btn-blue btn-sm" onclick="setExerciseStartDate('${safe}','${inputId}')" style="font-size:11px;">Ab Datum</button>
         <button class="btn btn-ghost btn-sm" onclick="resetExerciseView('${safe}')" style="font-size:11px;">Ab heute</button>
-        <button class="btn btn-danger btn-sm" onclick="removeExerciseFromView('${safe}')" style="font-size:11px;">Aus Ansicht löschen</button>
+        <button class="btn btn-danger btn-sm" onclick="removeExerciseFromView('${safe}')" style="font-size:11px;">Aus Liste löschen</button>
       </div>
     </div>`;
   }).join('');
