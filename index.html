@@ -3153,29 +3153,23 @@ function resetExerciseFilter(){
   renderStats();
   showToast('Alle Übungen wieder in der Ansicht.');
 }
-function setExerciseStartDate(name,inputId,refresh=true){
-  const input=g(inputId);
-  const date=dateKey(input?.value||today());
+function setExerciseStartDateValue(name,date,refresh=true,notify=true){
+  date=dateKey(date);
   if(!date){showToast('Bitte Datum wählen.',true);return;}
-  if(input)input.value=date;
   const rule={...exerciseRule(name),resetDate:date,hidden:false};
   delete rule.ignoredSessionIds;
   _exerciseViewRules[name]=rule;
   saveExerciseViewRules();
   if(refresh){
+    renderExerciseFilterList();
     renderStats();
-    showToast(`"${name}" zählt ab ${fmtD(date,{day:'2-digit',month:'short',year:'numeric'})}.`);
+    if(notify)showToast(`"${name}" zählt ab ${fmtD(date,{day:'2-digit',month:'short',year:'numeric'})}.`);
   }
 }
-function resetExerciseView(name,inputId){
-  const rule={...exerciseRule(name),resetDate:today(),hidden:false};
-  delete rule.ignoredSessionIds;
-  _exerciseViewRules[name]=rule;
-  saveExerciseViewRules();
-  const input=inputId?g(inputId):null;
-  if(input)input.value=rule.resetDate;
-  renderStats();
-  showToast(`"${name}" startet ab heute neu.`);
+function handleExerciseStartDateInput(input){
+  const name=input?.dataset?.exName||'';
+  if(!name)return;
+  setExerciseStartDateValue(name,input.value,true,false);
 }
 function removeExerciseFromView(name){
   if(!confirm(`"${name}" aus dieser Liste und der Stats-Ansicht löschen? Gespeicherte Einheiten bleiben erhalten.`))return;
@@ -3233,7 +3227,7 @@ function renderExerciseFilterList(){
     const appearsAgain=rule.hidden&&visibleCount>0;
     const resetLabel=rule.resetDate?fmtD(rule.resetDate,{day:'2-digit',month:'short',year:'numeric'}):'';
     const status=appearsAgain?'neu erkannt':rule.resetDate?(visibleCount>0?`sichtbar ab ${resetLabel}`:`noch keine Einheit seit ${resetLabel}`):(visibleCount>0?'sichtbar':'aus Liste gelöscht');
-    const safe=htmlEscape(jsEscape(n)), label=htmlEscape(n), inputId=`ex-start-${i}`;
+    const safe=htmlEscape(jsEscape(n)), label=htmlEscape(n);
     return`<div class="exercise-view-row">
       <div class="exercise-view-main">
         <div>
@@ -3243,9 +3237,7 @@ function renderExerciseFilterList(){
         <button class="btn btn-ghost btn-sm" onclick="restoreExerciseView('${safe}')" style="font-size:11px;${rule.resetDate||rule.hidden?'':'display:none;'}">Alles anzeigen</button>
       </div>
       <div class="exercise-view-actions">
-        <input class="exercise-view-date" type="date" id="${inputId}" data-ex-name="${label}" value="${rule.resetDate||''}" onchange="setExerciseStartDate('${safe}','${inputId}',false)">
-        <button class="btn btn-blue btn-sm" onclick="setExerciseStartDate('${safe}','${inputId}',true)" style="font-size:11px;">Ab Datum</button>
-        <button class="btn btn-ghost btn-sm" onclick="resetExerciseView('${safe}','${inputId}')" style="font-size:11px;">Ab heute</button>
+        <input class="exercise-view-date" type="date" data-ex-name="${label}" value="${rule.resetDate||''}" onchange="handleExerciseStartDateInput(this)" oninput="handleExerciseStartDateInput(this)">
         <button class="btn btn-danger btn-sm" onclick="removeExerciseFromView('${safe}')" style="font-size:11px;">Aus Liste löschen</button>
       </div>
     </div>`;
