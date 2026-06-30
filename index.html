@@ -220,10 +220,16 @@
     .filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
     .fbtn{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;}
     .fbtn.active{border-color:var(--accent3);color:var(--accent3);background:rgba(71,200,255,.1);}
-    .chart-check-toggle{display:flex;align-items:center;gap:8px;margin-left:auto;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.025);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
-    .chart-check-toggle input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+    .chart-check-toggle{display:flex;align-items:center;gap:6px;margin-left:auto;padding:5px 9px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.018);color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
+    .chart-check-toggle:hover{border-color:rgba(232,255,71,.35);color:var(--text);}
+    .chart-check-toggle input{width:13px;height:13px;accent-color:var(--accent);cursor:pointer;}
     .chart-check-toggle span{line-height:1;}
-    .mood-meter{position:relative;height:14px;border-radius:999px;background:linear-gradient(90deg,#ff4757 0%,#ff9f47 28%,#47c8ff 52%,#47ffb8 76%,#e8ff47 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);}
+    .exercise-view-row{padding:12px 0;border-bottom:1px solid var(--border);}
+    .exercise-view-row:last-child{border-bottom:none;}
+    .exercise-view-main{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
+    .exercise-view-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .exercise-view-date{height:32px;min-width:142px;padding:0 8px;font-size:12px;border-radius:8px;}
+    .mood-meter{position:relative;height:14px;border-radius:999px;background:linear-gradient(90deg,#b46cff 0%,#ff4757 18%,#ff6b6b 34%,#ff9f47 50%,#47c8ff 68%,#47ffb8 84%,#e8ff47 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);}
     .mood-meter-pin{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;border:3px solid var(--card);background:var(--text);transform:translate(-50%,-50%);box-shadow:0 6px 16px rgba(0,0,0,.3);}
     .mood-dist-row{display:grid;grid-template-columns:92px 1fr 34px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.055);}
     .mood-dist-row:last-child{border-bottom:none;}
@@ -934,7 +940,7 @@
       </div>
       <div class="chart-wrap">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-          <div class="chart-title" style="margin-bottom:0;">VERLAUF</div>
+          <div class="chart-title" style="margin-bottom:0;">STIMMUNGSBAROMETER</div>
           <div style="display:flex;gap:4px;">
             <button class="fbtn mdtf active" onclick="setMoodTimeFilter('1m',this)">1M</button>
             <button class="fbtn mdtf" onclick="setMoodTimeFilter('3m',this)">3M</button>
@@ -943,10 +949,6 @@
             <button class="fbtn mdtf" onclick="setMoodTimeFilter('all',this)">Alle</button>
           </div>
         </div>
-        <canvas id="moodChart" height="200"></canvas>
-      </div>
-      <div class="chart-wrap">
-        <div class="chart-title" style="margin-bottom:12px;">STIMMUNGSBAROMETER</div>
         <div id="mood-averages"></div>
       </div>
       <div class="chart-title" style="padding:4px 0 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;">ALLE EINTRÄGE</div>
@@ -1281,10 +1283,10 @@
       <div class="modal-title">ÜBUNGEN ANSICHT</div>
       <button class="close-btn" onclick="closeModal('modal-ex-filter')">✕</button>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Zurückgesetzte Übungen werden nur aus der Fortschrittsansicht ausgeblendet. Deine gespeicherten Einheiten bleiben unverändert.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Setze Übungen für die Stats-Ansicht ab einem Datum neu oder entferne sie aus der Ansicht, bis du sie wieder trainierst. Gespeicherte Einheiten bleiben unverändert.</div>
     <div id="ex-filter-list" style="max-height:60vh;overflow-y:auto;"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
-      <button class="btn btn-ghost" onclick="resetExerciseFilter()">Alle anzeigen</button>
+      <button class="btn btn-ghost" onclick="resetExerciseFilter()">Alle Regeln löschen</button>
       <button class="btn btn-accent" onclick="closeModal('modal-ex-filter');renderStats();">Fertig</button>
     </div>
   </div>
@@ -1386,6 +1388,7 @@
         <button class="rating-btn" data-val="-1" onclick="selectMoodRating(-1,this)">Gestresst 😣</button>
         <button class="rating-btn" data-val="-2" onclick="selectMoodRating(-2,this)">Traurig 😢</button>
         <button class="rating-btn" data-val="-3" onclick="selectMoodRating(-3,this)">Wütend 😡</button>
+        <button class="rating-btn" data-val="-4" onclick="selectMoodRating(-4,this)">Krank &#x1F912;</button>
       </div>
     </div>
     <div class="field"><label>Notiz (optional)</label><input type="text" id="mood-note" placeholder="z.B. Stress bei der Arbeit..."></div>
@@ -2227,7 +2230,7 @@ function switchSharedTab(tabId, btn){
         {label:'Ø 7 Tage',data:maM,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
       ]},options:{plugins:{legend:{display:false}},
         scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-                y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-3,max:2}}}});
+                y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-4,max:2}}}});
     },50);
     return;
   }
@@ -3019,38 +3022,90 @@ async function toggleArchivePlan(id, archive){
 function startPlanFromPlans(id){ const plan=plans.find(p=>p.id===id); if(!plan)return; showTab('log',document.querySelector('.tab[data-tab="log"]')); startWorkout(plan); }
 
 // ── STATS ── FIX: use loaded sessions data properly
-// Exercise filter: names to HIDE from stats select
-let _hiddenExercises = new Set(JSON.parse(localStorage.getItem('ironlog_hidden_ex')||'[]'));
+// Exercise view rules only affect the stats display. Saved sessions stay untouched.
+let _exerciseViewRules = JSON.parse(localStorage.getItem('ironlog_ex_view_rules')||'{}');
+const _legacyHiddenExercises = new Set(JSON.parse(localStorage.getItem('ironlog_hidden_ex')||'[]'));
+_legacyHiddenExercises.forEach(name=>{
+  if(!_exerciseViewRules[name]) _exerciseViewRules[name]={hidden:true,ignoredSessionIds:[]};
+});
 
-function saveHiddenExercises(){
-  localStorage.setItem('ironlog_hidden_ex', JSON.stringify([..._hiddenExercises]));
+function saveExerciseViewRules(){
+  localStorage.setItem('ironlog_ex_view_rules', JSON.stringify(_exerciseViewRules));
+  localStorage.setItem('ironlog_hidden_ex', JSON.stringify([]));
 }
-
-function toggleHiddenExercise(name){
-  if(_hiddenExercises.has(name)) _hiddenExercises.delete(name);
-  else _hiddenExercises.add(name);
-  saveHiddenExercises();
-  renderExerciseFilterList();
-  renderStats();
+function htmlEscape(v){
+  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function jsEscape(v){
+  return String(v??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');
+}
+function sessionViewId(s){
+  return String(s.id||`${s.date}|${s.name||'Training'}`);
+}
+function exerciseRule(name){
+  return _exerciseViewRules[name]||{};
+}
+function sessionsWithExercise(name, baseSessions=sessions){
+  return baseSessions.filter(s=>(s.exercises||[]).some(e=>e.name===name));
+}
+function visibleSessionsForExercise(name, baseSessions=sessions){
+  const rule=exerciseRule(name);
+  const ignored=new Set(rule.ignoredSessionIds||[]);
+  return sessionsWithExercise(name,baseSessions).filter(s=>{
+    if(ignored.has(sessionViewId(s))) return false;
+    if(rule.resetDate && s.date<rule.resetDate) return false;
+    return true;
+  });
+}
+function visibleExerciseNames(){
+  const allEx=sessions.flatMap(s=>s.exercises||[]);
+  return [...new Set(allEx.map(e=>e.name).filter(Boolean))]
+    .filter(n=>visibleSessionsForExercise(n).length>0)
+    .sort();
 }
 
 function resetExerciseFilter(){
-  _hiddenExercises.clear();
-  saveHiddenExercises();
-  document.querySelectorAll('#ex-filter-list input[type=checkbox]').forEach(cb=>cb.checked=true);
+  _exerciseViewRules={};
+  saveExerciseViewRules();
   renderExerciseFilterList();
   renderStats();
+  showToast('Alle Übungen wieder in der Ansicht.');
+}
+function setExerciseStartDate(name,inputId){
+  const input=g(inputId);
+  const date=input?.value||today();
+  if(!date){showToast('Bitte Datum wählen.',true);return;}
+  const rule={...exerciseRule(name),resetDate:date,hidden:false};
+  delete rule.ignoredSessionIds;
+  _exerciseViewRules[name]=rule;
+  saveExerciseViewRules();
+  renderExerciseFilterList();
+  renderStats();
+  showToast(`"${name}" zählt ab ${fmtD(date,{day:'2-digit',month:'short',year:'numeric'})}.`);
 }
 function resetExerciseView(name){
-  _hiddenExercises.add(name);
-  saveHiddenExercises();
+  const rule={...exerciseRule(name),resetDate:today(),hidden:false};
+  delete rule.ignoredSessionIds;
+  _exerciseViewRules[name]=rule;
+  saveExerciseViewRules();
   renderExerciseFilterList();
   renderStats();
-  showToast(`"${name}" nur aus der Ansicht zurückgesetzt.`);
+  showToast(`"${name}" startet ab heute neu.`);
+}
+function removeExerciseFromView(name){
+  if(!confirm(`"${name}" aus der Stats-Ansicht löschen? Gespeicherte Einheiten bleiben erhalten.`))return;
+  _exerciseViewRules[name]={
+    hidden:true,
+    ignoredSessionIds:sessionsWithExercise(name).map(sessionViewId)
+  };
+  saveExerciseViewRules();
+  renderExerciseFilterList();
+  renderStats();
+  showToast(`"${name}" erscheint wieder, sobald du sie neu trainierst.`);
 }
 function restoreExerciseView(name){
-  _hiddenExercises.delete(name);
-  saveHiddenExercises();
+  delete _exerciseViewRules[name];
+  saveExerciseViewRules();
   renderExerciseFilterList();
   renderStats();
 }
@@ -3064,25 +3119,27 @@ function renderExerciseFilterList(){
   const allEx = sessions.flatMap(s=>s.exercises||[]);
   const names = [...new Set(allEx.map(e=>e.name).filter(Boolean))].sort();
   const el = g('ex-filter-list');
-  el.innerHTML = names.map(n=>{
-    const visible = !_hiddenExercises.has(n);
-    const count = sessions.filter(s=>(s.exercises||[]).some(e=>e.name===n)).length;
-    const safe = n.replace(/'/g,"\\'");
-    return`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+  if(!names.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Keine Übungen vorhanden.</div>';return;}
+  el.innerHTML = names.map((n,i)=>{
+    const rule=exerciseRule(n);
+    const total=sessionsWithExercise(n).length;
+    const visibleCount=visibleSessionsForExercise(n).length;
+    const appearsAgain=rule.hidden&&visibleCount>0;
+    const status=visibleCount>0?(rule.resetDate?`sichtbar ab ${fmtD(rule.resetDate,{day:'2-digit',month:'short',year:'numeric'})}`:'sichtbar'):'aus Ansicht gelöscht';
+    const safe=jsEscape(n), label=htmlEscape(n), inputId=`ex-start-${i}`;
+    return`<div class="exercise-view-row">
+      <div class="exercise-view-main">
         <div>
-          <div style="font-size:14px;font-weight:600;">${n}</div>
-          <div style="font-size:11px;color:var(--muted);">${count} Einheit${count!==1?'en':''} · ${visible?'in Ansicht':'zurückgesetzt'}</div>
+          <div style="font-size:14px;font-weight:700;">${label}</div>
+          <div style="font-size:11px;color:var(--muted);">${visibleCount}/${total} Einheit${total!==1?'en':''} in Ansicht · ${appearsAgain?'neu erkannt':status}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button class="btn ${visible?'btn-ghost':'btn-blue'} btn-sm" onclick="${visible?`resetExerciseView('${safe}')`:`restoreExerciseView('${safe}')`}" style="font-size:11px;">${visible?'Zurücksetzen':'Anzeigen'}</button>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-            <span style="font-size:11px;color:var(--muted);min-width:52px;text-align:right;">${visible?'Sichtbar':'Versteckt'}</span>
-            <input type="checkbox" ${visible?'checked':''} 
-              onchange="toggleHiddenExercise('${safe}')"
-              style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
-          </label>
-        </div>
+        <button class="btn btn-ghost btn-sm" onclick="restoreExerciseView('${safe}')" style="font-size:11px;${rule.resetDate||rule.hidden?'':'display:none;'}">Alles anzeigen</button>
+      </div>
+      <div class="exercise-view-actions">
+        <input class="exercise-view-date" type="date" id="${inputId}" value="${rule.resetDate||''}">
+        <button class="btn btn-blue btn-sm" onclick="setExerciseStartDate('${safe}','${inputId}')" style="font-size:11px;">Ab Datum</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetExerciseView('${safe}')" style="font-size:11px;">Ab heute</button>
+        <button class="btn btn-danger btn-sm" onclick="removeExerciseFromView('${safe}')" style="font-size:11px;">Aus Ansicht löschen</button>
       </div>
     </div>`;
   }).join('');
@@ -3093,18 +3150,16 @@ function renderExerciseFilterList(){
 function renderStats(){
   const total=sessions.length,allEx=sessions.flatMap(s=>s.exercises||[]);
   const totalSets=sessions.reduce((sum,s)=>sum+(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0),0);
-  const unique=[...new Set(allEx.map(e=>e.name?.toLowerCase()).filter(Boolean))].length;
+  const names=visibleExerciseNames();
+  const unique=names.length;
   g('stats-grid').innerHTML=`
     <div class="stat-box"><div class="stat-val">${total}</div><div class="stat-label">Einheiten</div></div>
     <div class="stat-box"><div class="stat-val">${totalSets}</div><div class="stat-label">Sets gesamt</div></div>
     <div class="stat-box"><div class="stat-val">${unique}</div><div class="stat-label">Übungen</div></div>
     <div class="stat-box"><div class="stat-val">${total?Math.round(totalSets/total):0}</div><div class="stat-label">Sets/Einheit</div></div>`;
-  // Only show non-hidden exercises in select
-  const names=[...new Set(allEx.map(e=>e.name).filter(Boolean))].sort()
-    .filter(n=>!_hiddenExercises.has(n));
   const sel=g('chart-ex-sel');
   const prev=sel.value;
-  sel.innerHTML=names.length?names.map(n=>`<option value="${n}">${n}</option>`):'<option>Keine Daten</option>';
+  sel.innerHTML=names.length?names.map(n=>`<option value="${htmlEscape(n)}">${htmlEscape(n)}</option>`):'<option>Keine Daten</option>';
   if(prev&&names.includes(prev)) sel.value=prev; // keep selection if still visible
   updateProgressChart();
 }
@@ -3126,6 +3181,12 @@ function setStatMode(mode, btn) {
 function updateProgressChart(){
   const exName = g('chart-ex-sel').value;
   const pts = [];
+  const tbl = g('stats-last3');
+  if(!exName||exName==='Keine Daten'){
+    if(pChartI) pChartI.destroy();
+    if(tbl) tbl.innerHTML='';
+    return;
+  }
   // Apply time filter
   let filteredSessions = [...sessions];
   if(_statsTimeFilter !== 'all') {
@@ -3135,7 +3196,7 @@ function updateProgressChart(){
     const cutStr = cutoff.toISOString().split('T')[0];
     filteredSessions = filteredSessions.filter(s=>s.date>=cutStr);
   }
-  const allSessions = filteredSessions.sort((a,b)=>a.date.localeCompare(b.date));
+  const allSessions = visibleSessionsForExercise(exName, filteredSessions).sort((a,b)=>a.date.localeCompare(b.date));
   allSessions.forEach(s=>(s.exercises||[]).forEach(ex=>{
     if(ex.name===exName){
       const sets = ex.sets||[];
@@ -3159,7 +3220,6 @@ function updateProgressChart(){
 
   // ── Last 3 sessions table ──
   const last3 = pts.slice(-3).reverse();
-  const tbl = g('stats-last3');
   if(!tbl||!last3.length){if(tbl)tbl.innerHTML='';return;}
   const rows = last3.map(p=>{
     const sets=p.ex.sets||[];
@@ -4368,7 +4428,7 @@ function _doExportSleepPDF(mode){
 // ═══════════════════════════════════════════════════
 // ── MOOD ──
 // ═══════════════════════════════════════════════════
-let moodTimeFilter='all', moodRatingVal=null, editingMoodId=null, moodChartI=null;
+let moodTimeFilter='1m', moodRatingVal=null, editingMoodId=null, moodChartI=null;
 
 const MOOD_RATINGS={
   2:{label:'Glücklich',emoji:'😄',color:'#e8ff47'},
@@ -4376,9 +4436,10 @@ const MOOD_RATINGS={
   0:{label:'Neutral',emoji:'😐',color:'#47c8ff'},
   '-1':{label:'Gestresst',emoji:'😣',color:'#ff9f47'},
   '-2':{label:'Traurig',emoji:'😢',color:'#ff6b6b'},
-  '-3':{label:'Wütend',emoji:'😡',color:'#ff4757'}
+  '-3':{label:'Wütend',emoji:'😡',color:'#ff4757'},
+  '-4':{label:'Krank',emoji:'🤒',color:'#b46cff'}
 };
-const MOOD_ORDER=[2,1,0,-1,-2,-3];
+const MOOD_ORDER=[2,1,0,-1,-2,-3,-4];
 function moodInfo(v){ return MOOD_RATINGS[v]||MOOD_RATINGS[0]; }
 function moodFromAverage(avg){
   if(avg>=1.5)return MOOD_RATINGS[2];
@@ -4386,13 +4447,18 @@ function moodFromAverage(avg){
   if(avg>=-.5)return MOOD_RATINGS[0];
   if(avg>=-1.5)return MOOD_RATINGS[-1];
   if(avg>=-2.5)return MOOD_RATINGS[-2];
-  return MOOD_RATINGS[-3];
+  if(avg>=-3.5)return MOOD_RATINGS[-3];
+  return MOOD_RATINGS[-4];
+}
+
+function moodFilterLabel(f){
+  return {all:'Alle Einträge','1m':'1 Monat','3m':'3 Monate','6m':'6 Monate','1y':'1 Jahr'}[f]||'Zeitraum';
 }
 
 function setMoodTimeFilter(f,btn){
   moodTimeFilter=f;
   document.querySelectorAll('.mdtf').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  if(btn) btn.classList.add('active');
   renderMood();
 }
 
@@ -4436,7 +4502,7 @@ async function deleteMoodEntry(){
   await loadAllData(); closeModal('modal-mood'); renderMood(); showToast('Gelöscht.');
 }
 
-function renderMood(){renderMoodChart();renderMoodAverages();renderMoodGroups();}
+function renderMood(){renderMoodAverages();renderMoodGroups();}
 
 function renderMoodChart(){
   if(moodChartI){try{moodChartI.destroy();}catch(e){}moodChartI=null;}
@@ -4457,7 +4523,7 @@ function renderMoodChart(){
   },options:{
     plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Ø')}}},
     scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-            y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-3,max:2}}
+            y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-4,max:2}}
   }});
 }
 
@@ -4467,10 +4533,9 @@ function renderMoodAverages(){
   const filtered=filterByTime(moodEntries,moodTimeFilter);
   const sorted=[...filtered].sort((a,b)=>a.date.localeCompare(b.date));
   if(!sorted.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Keine Daten im Zeitraum.</div>';return;}
-  const recent=sorted.slice(-14);
-    const avg=recent.reduce((a,e)=>a+Number(e.rating),0)/recent.length;
+  const avg=sorted.reduce((a,e)=>a+Number(e.rating),0)/sorted.length;
   const current=moodFromAverage(avg);
-  const pct=Math.max(0,Math.min(100,((avg+3)/5)*100));
+  const pct=Math.max(0,Math.min(100,((avg+4)/6)*100));
   const total=sorted.length;
   const rows=MOOD_ORDER.map(v=>{
     const r=MOOD_RATINGS[v], count=sorted.filter(e=>Number(e.rating)===v).length;
@@ -4484,10 +4549,10 @@ function renderMoodAverages(){
   el.innerHTML=`<div style="display:grid;gap:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
       <div>
-        <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Barometer · letzte 14 Einträge</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Barometer · ${moodFilterLabel(moodTimeFilter)}</div>
         <div style="font-size:22px;font-weight:800;color:${current.color};margin-top:4px;">${current.emoji} ${current.label}</div>
       </div>
-      <div style="font-size:12px;color:var(--muted);text-align:right;">${recent.length} Einträge<br>Ø ${avg>=0?'+':''}${avg.toFixed(1)}</div>
+      <div style="font-size:12px;color:var(--muted);text-align:right;">${sorted.length} Einträge<br>Ø ${avg>=0?'+':''}${avg.toFixed(1)}</div>
     </div>
     <div class="mood-meter"><div class="mood-meter-pin" style="left:${pct}%;background:${current.color};"></div></div>
     <div>${rows}</div>
@@ -4541,20 +4606,26 @@ function _doExportMoodPDF(mode){
   const sorted=[...moodEntries].sort((a,b)=>b.date.localeCompare(a.date));
   const name=currentProfile?.name||'';
   const rows=sorted.map(e=>{const r=MOOD_RATINGS[e.rating]||MOOD_RATINGS[0];return`<tr><td>${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</td><td>${e.time||'—'}</td><td>${r.emoji} ${r.label}</td><td style="font-size:11px;color:#666;">${e.note||'—'}</td></tr>`;}).join('');
+  const moodScope=[...filterByTime(moodEntries,moodTimeFilter)].sort((a,b)=>a.date.localeCompare(b.date));
+  let barometerHtml='<div class="section">Stimmungsbarometer</div><p>Keine Daten im gewählten Zeitraum.</p>';
+  if(moodScope.length){
+    const avg=moodScope.reduce((a,e)=>a+Number(e.rating),0)/moodScope.length;
+    const current=moodFromAverage(avg);
+    const dist=MOOD_ORDER.map(v=>{
+      const r=MOOD_RATINGS[v], count=moodScope.filter(e=>Number(e.rating)===v).length;
+      return count?`<tr><td>${r.emoji} ${r.label}</td><td>${count}</td></tr>`:'';
+    }).join('');
+    barometerHtml=`<div class="section">Stimmungsbarometer</div><p><b>${current.emoji} ${current.label}</b> · ${moodFilterLabel(moodTimeFilter)} · ${moodScope.length} Einträge · Ø ${avg>=0?'+':''}${avg.toFixed(1)}</p><table><thead><tr><th>Emotion</th><th>Anzahl</th></tr></thead><tbody>${dist}</tbody></table>`;
+  }
   const body=`<h1>IRONLOG <span style="color:#666;font-weight:300;">Stimmung</span></h1>
     <div class="sub">${name} · ${sorted.length} Einträge</div>
     <table><thead><tr><th>Datum</th><th>Uhrzeit</th><th>Stimmung</th><th>Notiz</th></tr></thead><tbody>${rows}</tbody></table>`;
   if(mode==='table'){
     openPDFWindow('IRONLOG Stimmung',body);
   } else if(mode==='chart'){
-    const canvas=g('moodChart');
-    if(!canvas){showToast('Kein Diagramm verfügbar.',true);return;}
-    const img=canvas.toDataURL('image/png');
-    openPDFWindow('IRONLOG Stimmung',`<h1>IRONLOG <span style="color:#666;font-weight:300;">Stimmung</span></h1><div class="sub">${name}</div><div class="section">Diagramm</div><img src="${img}" style="max-width:100%;"/>`);
+    openPDFWindow('IRONLOG Stimmung',`<h1>IRONLOG <span style="color:#666;font-weight:300;">Stimmung</span></h1><div class="sub">${name}</div>${barometerHtml}`);
   } else {
-    const canvas=g('moodChart');
-    const chartHtml=canvas?`<div class="section">Diagramm</div><img src="${canvas.toDataURL('image/png')}" style="max-width:100%;margin-bottom:16px;"/>` :'';
-    openPDFWindow('IRONLOG Stimmung',`<h1>IRONLOG <span style="color:#666;font-weight:300;">Stimmung</span></h1><div class="sub">${name} · ${sorted.length} Einträge</div>${chartHtml}<div class="section">Alle Einträge</div><table><thead><tr><th>Datum</th><th>Uhrzeit</th><th>Stimmung</th><th>Notiz</th></tr></thead><tbody>${rows}</tbody></table>`);
+    openPDFWindow('IRONLOG Stimmung',`<h1>IRONLOG <span style="color:#666;font-weight:300;">Stimmung</span></h1><div class="sub">${name} · ${sorted.length} Einträge</div>${barometerHtml}<div class="section">Alle Einträge</div><table><thead><tr><th>Datum</th><th>Uhrzeit</th><th>Stimmung</th><th>Notiz</th></tr></thead><tbody>${rows}</tbody></table>`);
   }
 }
 
