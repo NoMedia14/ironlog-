@@ -1287,7 +1287,7 @@
     <div id="ex-filter-list" style="max-height:60vh;overflow-y:auto;"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
       <button class="btn btn-ghost" onclick="resetExerciseFilter()">Alle Regeln löschen</button>
-      <button class="btn btn-accent" onclick="closeModal('modal-ex-filter');renderStats();">Fertig</button>
+      <button class="btn btn-accent" onclick="applyExerciseFilterDatesFromModal();closeModal('modal-ex-filter');renderStats();">Fertig</button>
     </div>
   </div>
 </div>
@@ -1757,6 +1757,7 @@ async function loadAllData(){
       exercises: typeof sess.exercises === 'string' ? JSON.parse(sess.exercises||'[]') : (sess.exercises||[])
     })); plans=p.data||[]; weightEntries=w.data||[]; bpEntries=b.data||[];
     sleepEntries=sl.data||[]; moodEntries=md.data||[]; habits=hb.data||[]; habitLogs=hl.data||[]; shares=sh.data||[];
+    if(typeof invalidateExerciseViewIndex==='function') invalidateExerciseViewIndex();
     setSyncState('ok');
   }catch(e){ setSyncState('error'); showToast('Sync-Fehler',true); }
 }
@@ -2868,9 +2869,38 @@ function renderPlans(){
   }
   el.innerHTML=html;
 }
-function openNewPlan(){ editingPlanId=null;planExCounter=0; g('p-name').value=''; g('p-ex-container').innerHTML=''; g('plan-modal-ttl').textContent='NEUER PLAN'; addPlanEx(); g('modal-plan').classList.add('open'); }
-function editPlan(id){ const plan=plans.find(p=>p.id===id); if(!plan)return; editingPlanId=id;planExCounter=0; g('p-name').value=plan.name; g('p-ex-container').innerHTML=''; g('plan-modal-ttl').textContent='PLAN BEARBEITEN'; (plan.exercises||[]).forEach(ex=>addPlanEx(ex.name,ex.defaultSets,ex.defaultReps)); g('modal-plan').classList.add('open'); }
+function openNewPlan(){
+  editingPlanId=null; planExCounter=0;
+  g('p-name').value='';
+  g('plan-modal-ttl').textContent='NEUER PLAN';
+  renderPlanExerciseEditor([{name:'',defaultSets:3,defaultReps:10}]);
+  g('modal-plan').classList.add('open');
+}
+function editPlan(id){
+  const plan=plans.find(p=>p.id===id); if(!plan)return;
+  editingPlanId=id; planExCounter=0;
+  g('p-name').value=plan.name;
+  g('plan-modal-ttl').textContent='PLAN BEARBEITEN';
+  renderPlanExerciseEditor(plan.exercises||[]);
+  g('modal-plan').classList.add('open');
+}
+function renderPlanExerciseEditor(exercises=[]){
+  const con=g('p-ex-container'); if(!con)return;
+  con.innerHTML='';
+  planExCounter=0;
+  const frag=document.createDocumentFragment();
+  (exercises.length?exercises:[{name:'',defaultSets:3,defaultReps:10}]).forEach(ex=>{
+    frag.appendChild(createPlanExElement(ex.name||'',ex.defaultSets||3,ex.defaultReps||10));
+  });
+  con.appendChild(frag);
+  updatePexNums();
+}
 function addPlanEx(name='',sets=3,reps=10){
+  const con=g('p-ex-container'); if(!con)return;
+  con.appendChild(createPlanExElement(name,sets,reps));
+  updatePexNums();
+}
+function createPlanExElement(name='',sets=3,reps=10){
   const id=++planExCounter;
   const d=document.createElement('div'); d.className='plan-ex-item'; d.id='pex-'+id;
   d.draggable=true;
@@ -2880,21 +2910,20 @@ function addPlanEx(name='',sets=3,reps=10){
       <span class="pex-num" style="font-size:11px;color:var(--muted);padding-bottom:11px;"></span>
       <div>
         <label style="font-size:10px;margin-bottom:3px;">Übungsname</label>
-        <input type="text" placeholder="z.B. Bankdrücken" id="pex-n-${id}" value="${name}">
+        <input type="text" placeholder="z.B. Bankdrücken" id="pex-n-${id}" value="${htmlEscape(name)}">
       </div>
       <div>
         <label style="font-size:10px;margin-bottom:3px;">Sets</label>
-        <input type="number" id="pex-s-${id}" value="${sets}" min="1" max="20" style="text-align:center;">
+        <input type="number" id="pex-s-${id}" value="${htmlEscape(sets)}" min="1" max="20" style="text-align:center;">
       </div>
       <div>
         <label style="font-size:10px;margin-bottom:3px;">Wdh.</label>
-        <input type="text" id="pex-r-${id}" value="${reps}" inputmode="numeric" pattern="[0-9\\-]*" placeholder="8-12" style="text-align:center;">
+        <input type="text" id="pex-r-${id}" value="${htmlEscape(reps)}" inputmode="numeric" pattern="[0-9\\-]*" placeholder="8-12" style="text-align:center;">
       </div>
       <button class="del-set" style="margin-bottom:2px;" onclick="document.getElementById('pex-${id}').remove();updatePexNums()">✕</button>
     </div>`;
-  g('p-ex-container').appendChild(d);
-  updatePexNums();
   initPlanDnD(d);
+  return d;
 }
 
 function updatePexNums(){
@@ -2904,49 +2933,61 @@ function updatePexNums(){
   });
 }
 
-let dragSrc=null;
-function initPlanDnD(el){
-  // ── Mouse drag ──
-  el.addEventListener('dragstart',e=>{dragSrc=el;el.style.opacity='.4';e.dataTransfer.effectAllowed='move';});
-  el.addEventListener('dragend',()=>{el.style.opacity='';document.querySelectorAll('.plan-ex-item').forEach(i=>i.classList.remove('drag-over'));updatePexNums();});
-  el.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';if(el!==dragSrc)el.classList.add('drag-over');return false;});
-  el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
-  el.addEventListener('drop',e=>{
-    e.stopPropagation();e.preventDefault();
-    if(dragSrc!==el){
-      const con=g('p-ex-container');
-      const items=[...con.querySelectorAll('.plan-ex-item')];
-      const si=items.indexOf(dragSrc),ti=items.indexOf(el);
-      if(si<ti) con.insertBefore(dragSrc,el.nextSibling);
-      else con.insertBefore(dragSrc,el);
-    }
-    el.classList.remove('drag-over');
-    return false;
+let dragSrc=null, planDnDReady=false;
+function initPlanDnD(){
+  const con=g('p-ex-container'); if(!con||planDnDReady)return;
+  planDnDReady=true;
+  const clearPlanDrag=()=>{
+    document.querySelectorAll('#p-ex-container .plan-ex-item').forEach(i=>i.classList.remove('drag-over'));
+  };
+  const movePlanItem=(target)=>{
+    if(!dragSrc||!target||dragSrc===target)return;
+    const items=[...con.querySelectorAll('.plan-ex-item')];
+    const si=items.indexOf(dragSrc),ti=items.indexOf(target);
+    if(si<ti) con.insertBefore(dragSrc,target.nextSibling);
+    else con.insertBefore(dragSrc,target);
+    updatePexNums();
+  };
+  con.addEventListener('dragstart',e=>{
+    const item=e.target.closest('.plan-ex-item'); if(!item)return;
+    dragSrc=item; item.style.opacity='.4'; e.dataTransfer.effectAllowed='move';
   });
-
-  // ── Touch drag ──
-  const handle=el.querySelector('.drag-handle')||el;
-  handle.addEventListener('touchstart',e=>{dragSrc=el;el.style.opacity='.5';e.stopPropagation();},{passive:true});
-  handle.addEventListener('touchmove',e=>{
+  con.addEventListener('dragend',()=>{
+    if(dragSrc)dragSrc.style.opacity='';
+    clearPlanDrag(); updatePexNums(); dragSrc=null;
+  });
+  con.addEventListener('dragover',e=>{
+    const item=e.target.closest('.plan-ex-item'); if(!item||!dragSrc)return;
+    e.preventDefault(); e.dataTransfer.dropEffect='move';
+    clearPlanDrag();
+    if(item!==dragSrc)item.classList.add('drag-over');
+  });
+  con.addEventListener('dragleave',e=>{
+    const item=e.target.closest('.plan-ex-item'); if(item)item.classList.remove('drag-over');
+  });
+  con.addEventListener('drop',e=>{
+    const item=e.target.closest('.plan-ex-item'); if(!item)return;
+    e.stopPropagation(); e.preventDefault();
+    movePlanItem(item); item.classList.remove('drag-over');
+  });
+  con.addEventListener('touchstart',e=>{
+    const handle=e.target.closest('.drag-handle'); if(!handle)return;
+    const item=handle.closest('.plan-ex-item'); if(!item)return;
+    dragSrc=item; item.style.opacity='.5'; e.stopPropagation();
+  },{passive:true});
+  con.addEventListener('touchmove',e=>{
+    if(!dragSrc)return;
     e.preventDefault();
     const touch=e.touches[0];
-    document.querySelectorAll('.plan-ex-item').forEach(i=>i.classList.remove('drag-over'));
+    clearPlanDrag();
     const target=_planTouchTarget(touch.clientX,touch.clientY);
-    if(target&&target!==dragSrc) target.classList.add('drag-over');
+    if(target&&target!==dragSrc)target.classList.add('drag-over');
   },{passive:false});
-  handle.addEventListener('touchend',e=>{
-    el.style.opacity='';
-    document.querySelectorAll('.plan-ex-item').forEach(i=>i.classList.remove('drag-over'));
+  con.addEventListener('touchend',e=>{
+    if(!dragSrc)return;
+    dragSrc.style.opacity=''; clearPlanDrag();
     const touch=e.changedTouches[0];
-    const target=_planTouchTarget(touch.clientX,touch.clientY);
-    if(target&&target!==dragSrc){
-      const con=g('p-ex-container');
-      const items=[...con.querySelectorAll('.plan-ex-item')];
-      const si=items.indexOf(dragSrc),ti=items.indexOf(target);
-      if(si<ti) con.insertBefore(dragSrc,target.nextSibling);
-      else con.insertBefore(dragSrc,target);
-      updatePexNums();
-    }
+    movePlanItem(_planTouchTarget(touch.clientX,touch.clientY));
     dragSrc=null;
   });
 }
@@ -3028,8 +3069,13 @@ const _legacyHiddenExercises = new Set(JSON.parse(localStorage.getItem('ironlog_
 _legacyHiddenExercises.forEach(name=>{
   if(!_exerciseViewRules[name]) _exerciseViewRules[name]={hidden:true,ignoredSessionIds:[]};
 });
+let _exerciseViewIndexCache=null;
 
+function invalidateExerciseViewIndex(){
+  _exerciseViewIndexCache=null;
+}
 function saveExerciseViewRules(){
+  invalidateExerciseViewIndex();
   localStorage.setItem('ironlog_ex_view_rules', JSON.stringify(_exerciseViewRules));
   localStorage.setItem('ironlog_hidden_ex', JSON.stringify([]));
 }
@@ -3060,6 +3106,7 @@ function isSessionVisibleForExercise(name,s){
   return true;
 }
 function buildExerciseViewIndex(baseSessions=sessions){
+  if(baseSessions===sessions&&_exerciseViewIndexCache)return _exerciseViewIndexCache;
   const map=new Map();
   const ruleCache=new Map();
   const visibleByRule=(name,s)=>{
@@ -3081,6 +3128,7 @@ function buildExerciseViewIndex(baseSessions=sessions){
       if(visibleByRule(name,s))item.visible.push(s);
     });
   });
+  if(baseSessions===sessions)_exerciseViewIndexCache=map;
   return map;
 }
 function sessionsWithExercise(name, baseSessions=sessions){
@@ -3105,24 +3153,27 @@ function resetExerciseFilter(){
   renderStats();
   showToast('Alle Übungen wieder in der Ansicht.');
 }
-function setExerciseStartDate(name,inputId){
+function setExerciseStartDate(name,inputId,refresh=true){
   const input=g(inputId);
-  const date=input?.value||today();
+  const date=dateKey(input?.value||today());
   if(!date){showToast('Bitte Datum wählen.',true);return;}
+  if(input)input.value=date;
   const rule={...exerciseRule(name),resetDate:date,hidden:false};
   delete rule.ignoredSessionIds;
   _exerciseViewRules[name]=rule;
   saveExerciseViewRules();
-  renderExerciseFilterList();
-  renderStats();
-  showToast(`"${name}" zählt ab ${fmtD(date,{day:'2-digit',month:'short',year:'numeric'})}.`);
+  if(refresh){
+    renderStats();
+    showToast(`"${name}" zählt ab ${fmtD(date,{day:'2-digit',month:'short',year:'numeric'})}.`);
+  }
 }
-function resetExerciseView(name){
+function resetExerciseView(name,inputId){
   const rule={...exerciseRule(name),resetDate:today(),hidden:false};
   delete rule.ignoredSessionIds;
   _exerciseViewRules[name]=rule;
   saveExerciseViewRules();
-  renderExerciseFilterList();
+  const input=inputId?g(inputId):null;
+  if(input)input.value=rule.resetDate;
   renderStats();
   showToast(`"${name}" startet ab heute neu.`);
 }
@@ -3147,6 +3198,21 @@ function restoreExerciseView(name){
 function openExerciseFilter(){
   renderExerciseFilterList();
   g('modal-ex-filter').classList.add('open');
+}
+function applyExerciseFilterDatesFromModal(){
+  let changed=false;
+  document.querySelectorAll('#ex-filter-list .exercise-view-date').forEach(input=>{
+    const name=input.dataset.exName;
+    const date=dateKey(input.value);
+    if(!name||!date)return;
+    const current=exerciseRule(name);
+    if(current.resetDate===date&&!current.hidden)return;
+    const rule={...current,resetDate:date,hidden:false};
+    delete rule.ignoredSessionIds;
+    _exerciseViewRules[name]=rule;
+    changed=true;
+  });
+  if(changed)saveExerciseViewRules();
 }
 
 function renderExerciseFilterList(){
@@ -3177,9 +3243,9 @@ function renderExerciseFilterList(){
         <button class="btn btn-ghost btn-sm" onclick="restoreExerciseView('${safe}')" style="font-size:11px;${rule.resetDate||rule.hidden?'':'display:none;'}">Alles anzeigen</button>
       </div>
       <div class="exercise-view-actions">
-        <input class="exercise-view-date" type="date" id="${inputId}" value="${rule.resetDate||''}">
-        <button class="btn btn-blue btn-sm" onclick="setExerciseStartDate('${safe}','${inputId}')" style="font-size:11px;">Ab Datum</button>
-        <button class="btn btn-ghost btn-sm" onclick="resetExerciseView('${safe}')" style="font-size:11px;">Ab heute</button>
+        <input class="exercise-view-date" type="date" id="${inputId}" data-ex-name="${label}" value="${rule.resetDate||''}" onchange="setExerciseStartDate('${safe}','${inputId}',false)">
+        <button class="btn btn-blue btn-sm" onclick="setExerciseStartDate('${safe}','${inputId}',true)" style="font-size:11px;">Ab Datum</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetExerciseView('${safe}','${inputId}')" style="font-size:11px;">Ab heute</button>
         <button class="btn btn-danger btn-sm" onclick="removeExerciseFromView('${safe}')" style="font-size:11px;">Aus Liste löschen</button>
       </div>
     </div>`;
@@ -3228,8 +3294,8 @@ function updateProgressChart(){
     if(tbl) tbl.innerHTML='';
     return;
   }
-  // Apply time filter
-  let filteredSessions = [...sessions];
+  // Apply time filter to the already visible sessions for this exercise.
+  let filteredSessions = visibleSessionsForExercise(exName);
   if(_statsTimeFilter !== 'all') {
     if(_statsTimeFilter==='14d'){const c=new Date();c.setDate(c.getDate()-14);const cs=c.toISOString().split('T')[0];filteredSessions=filteredSessions.filter(s=>dateKey(s.date)>=cs);}
     const months={'1m':1,'3m':3,'6m':6,'1y':12}[_statsTimeFilter]||999;
@@ -3237,7 +3303,7 @@ function updateProgressChart(){
     const cutStr = cutoff.toISOString().split('T')[0];
     filteredSessions = filteredSessions.filter(s=>dateKey(s.date)>=cutStr);
   }
-  const allSessions = visibleSessionsForExercise(exName, filteredSessions).sort((a,b)=>dateKey(a.date).localeCompare(dateKey(b.date)));
+  const allSessions = filteredSessions.sort((a,b)=>dateKey(a.date).localeCompare(dateKey(b.date)));
   allSessions.forEach(s=>(s.exercises||[]).forEach(ex=>{
     if(ex.name===exName){
       const sets = ex.sets||[];
