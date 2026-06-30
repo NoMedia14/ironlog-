@@ -220,6 +220,15 @@
     .filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
     .fbtn{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;}
     .fbtn.active{border-color:var(--accent3);color:var(--accent3);background:rgba(71,200,255,.1);}
+    .chart-check-toggle{display:flex;align-items:center;gap:8px;margin-left:auto;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.025);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+    .chart-check-toggle input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+    .chart-check-toggle span{line-height:1;}
+    .mood-meter{position:relative;height:14px;border-radius:999px;background:linear-gradient(90deg,#ff4757 0%,#ff9f47 28%,#47c8ff 52%,#47ffb8 76%,#e8ff47 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);}
+    .mood-meter-pin{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;border:3px solid var(--card);background:var(--text);transform:translate(-50%,-50%);box-shadow:0 6px 16px rgba(0,0,0,.3);}
+    .mood-dist-row{display:grid;grid-template-columns:92px 1fr 34px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.055);}
+    .mood-dist-row:last-child{border-bottom:none;}
+    .mood-dist-bar{height:9px;border-radius:999px;background:var(--surface);overflow:hidden;}
+    .mood-dist-fill{height:100%;border-radius:999px;}
 
     /* BP */
     .bp-table{width:100%;border-collapse:collapse;font-size:12px;}
@@ -750,6 +759,7 @@
             <button class="fbtn wtf" onclick="setWTimeFilter('1y',this)">1J</button>
             <button class="fbtn wtf active" onclick="setWTimeFilter('all',this)">Alle</button>
           </div>
+          <label class="chart-check-toggle"><input type="checkbox" id="weight-raw-toggle" checked onchange="toggleWeightRaw(this)"><span>Einzelwerte</span></label>
         </div>
         <div class="filter-row">
           <button class="fbtn wmet active" onclick="switchWMetric('weight',this)">&#x2696;&#xFE0F; Gewicht</button>
@@ -757,7 +767,6 @@
           <button class="fbtn wmet" onclick="switchWMetric('hueft',this)">&#x1F4D0; H&#xFC;fte</button>
           <button class="fbtn wmet" onclick="switchWMetric('kcal',this)">&#x1F525; Kalorien</button>
           <button class="fbtn wmet" onclick="switchWMetric('korrelation',this)">&#x1F4C8; Korrelation</button>
-          <button class="fbtn active" id="weight-raw-toggle" onclick="toggleWeightRaw(this)">Einzelwerte</button>
         </div>
         <canvas id="weightChart" height="200"></canvas>
         <div id="korrelation-wrap" style="display:none;">
@@ -937,7 +946,7 @@
         <canvas id="moodChart" height="200"></canvas>
       </div>
       <div class="chart-wrap">
-        <div class="chart-title" style="margin-bottom:12px;">DURCHSCHNITTSWERTE</div>
+        <div class="chart-title" style="margin-bottom:12px;">STIMMUNGSBAROMETER</div>
         <div id="mood-averages"></div>
       </div>
       <div class="chart-title" style="padding:4px 0 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;">ALLE EINTRÄGE</div>
@@ -1269,13 +1278,13 @@
 <div class="modal-bg" id="modal-ex-filter">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">ÜBUNGEN VERWALTEN</div>
+      <div class="modal-title">ÜBUNGEN ANSICHT</div>
       <button class="close-btn" onclick="closeModal('modal-ex-filter')">✕</button>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Deaktivierte Übungen erscheinen nicht im Fortschrittsdiagramm.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Zurückgesetzte Übungen werden nur aus der Fortschrittsansicht ausgeblendet. Deine gespeicherten Einheiten bleiben unverändert.</div>
     <div id="ex-filter-list" style="max-height:60vh;overflow-y:auto;"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
-      <button class="btn btn-ghost" onclick="resetExerciseFilter()">Alle zurücksetzen</button>
+      <button class="btn btn-ghost" onclick="resetExerciseFilter()">Alle anzeigen</button>
       <button class="btn btn-accent" onclick="closeModal('modal-ex-filter');renderStats();">Fertig</button>
     </div>
   </div>
@@ -1371,11 +1380,12 @@
     <div class="field"><label>Uhrzeit</label><input type="time" id="mood-time"></div>
     <div class="field"><label>Stimmung</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;" id="mood-rating-btns">
-        <button class="rating-btn" data-val="2" onclick="selectMoodRating(2,this)">Sehr gut 😄</button>
-        <button class="rating-btn" data-val="1" onclick="selectMoodRating(1,this)">Gut 🙂</button>
+        <button class="rating-btn" data-val="2" onclick="selectMoodRating(2,this)">Glücklich 😄</button>
+        <button class="rating-btn" data-val="1" onclick="selectMoodRating(1,this)">Zufrieden 🙂</button>
         <button class="rating-btn" data-val="0" onclick="selectMoodRating(0,this)">Neutral 😐</button>
-        <button class="rating-btn" data-val="-1" onclick="selectMoodRating(-1,this)">Schlecht 😕</button>
-        <button class="rating-btn" data-val="-2" onclick="selectMoodRating(-2,this)">Sehr schlecht 😞</button>
+        <button class="rating-btn" data-val="-1" onclick="selectMoodRating(-1,this)">Gestresst 😣</button>
+        <button class="rating-btn" data-val="-2" onclick="selectMoodRating(-2,this)">Traurig 😢</button>
+        <button class="rating-btn" data-val="-3" onclick="selectMoodRating(-3,this)">Wütend 😡</button>
       </div>
     </div>
     <div class="field"><label>Notiz (optional)</label><input type="text" id="mood-note" placeholder="z.B. Stress bei der Arbeit..."></div>
@@ -2217,7 +2227,7 @@ function switchSharedTab(tabId, btn){
         {label:'Ø 7 Tage',data:maM,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
       ]},options:{plugins:{legend:{display:false}},
         scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-                y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-1,max:1}}}});
+                y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-3,max:2}}}});
     },50);
     return;
   }
@@ -3020,15 +3030,29 @@ function toggleHiddenExercise(name){
   if(_hiddenExercises.has(name)) _hiddenExercises.delete(name);
   else _hiddenExercises.add(name);
   saveHiddenExercises();
-  // Update checkbox in modal
-  const cb = document.getElementById('exf-'+CSS.escape(name));
-  if(cb) cb.checked = !_hiddenExercises.has(name);
+  renderExerciseFilterList();
+  renderStats();
 }
 
 function resetExerciseFilter(){
   _hiddenExercises.clear();
   saveHiddenExercises();
   document.querySelectorAll('#ex-filter-list input[type=checkbox]').forEach(cb=>cb.checked=true);
+  renderExerciseFilterList();
+  renderStats();
+}
+function resetExerciseView(name){
+  _hiddenExercises.add(name);
+  saveHiddenExercises();
+  renderExerciseFilterList();
+  renderStats();
+  showToast(`"${name}" nur aus der Ansicht zurückgesetzt.`);
+}
+function restoreExerciseView(name){
+  _hiddenExercises.delete(name);
+  saveHiddenExercises();
+  renderExerciseFilterList();
+  renderStats();
 }
 
 function openExerciseFilter(){
@@ -3048,14 +3072,14 @@ function renderExerciseFilterList(){
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <div>
           <div style="font-size:14px;font-weight:600;">${n}</div>
-          <div style="font-size:11px;color:var(--muted);">${count} Einheit${count!==1?'en':''}</div>
+          <div style="font-size:11px;color:var(--muted);">${count} Einheit${count!==1?'en':''} · ${visible?'in Ansicht':'zurückgesetzt'}</div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <button class="btn btn-danger btn-sm" onclick="deleteExerciseFromAll('${safe}')" style="font-size:11px;">🗑</button>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <button class="btn ${visible?'btn-ghost':'btn-blue'} btn-sm" onclick="${visible?`resetExerciseView('${safe}')`:`restoreExerciseView('${safe}')`}" style="font-size:11px;">${visible?'Zurücksetzen':'Anzeigen'}</button>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
             <span style="font-size:11px;color:var(--muted);min-width:52px;text-align:right;">${visible?'Sichtbar':'Versteckt'}</span>
             <input type="checkbox" ${visible?'checked':''} 
-              onchange="toggleHiddenExercise('${safe}');this.previousElementSibling.textContent=this.checked?'Sichtbar':'Versteckt';"
+              onchange="toggleHiddenExercise('${safe}')"
               style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
           </label>
         </div>
@@ -3065,26 +3089,6 @@ function renderExerciseFilterList(){
 }
 
 
-
-async function deleteExerciseFromAll(name){
-  const count = sessions.filter(s=>(s.exercises||[]).some(e=>e.name===name)).length;
-  if(!confirm(`"${name}" aus allen ${count} Einheit${count!==1?'en':''} löschen?
-
-Die Trainings bleiben erhalten, nur diese Übung wird entfernt.`)) return;
-  setSyncState('syncing');
-  const affected = sessions.filter(s=>(s.exercises||[]).some(e=>e.name===name));
-  for(const s of affected){
-    const newEx = (s.exercises||[]).filter(e=>e.name!==name);
-    const{error}=await sb.from('sessions').update({exercises:newEx}).eq('id',s.id).eq('user_id',currentUser.id);
-    if(error){showToast('Fehler: '+error.message,true);setSyncState('error');return;}
-  }
-  _hiddenExercises.delete(name);
-  saveHiddenExercises();
-  await loadAllData();
-  renderExerciseFilterList();
-  renderStats();
-  showToast(`"${name}" aus ${count} Einheit${count!==1?'en':''} gelöscht.`);
-}
 
 function renderStats(){
   const total=sessions.length,allEx=sessions.flatMap(s=>s.exercises||[]);
@@ -3252,11 +3256,14 @@ function switchWMetric(m,btn){
   renderWeightChart();
 }
 function toggleWeightRaw(btn){
-  showWeightRaw=!showWeightRaw;
+  showWeightRaw=btn&&btn.type==='checkbox'?btn.checked:!showWeightRaw;
   const b=btn||g('weight-raw-toggle');
   if(b){
-    b.classList.toggle('active',showWeightRaw);
-    b.textContent=showWeightRaw?'Einzelwerte':'Nur Ø';
+    if(b.type==='checkbox') b.checked=showWeightRaw;
+    else {
+      b.classList.toggle('active',showWeightRaw);
+      b.textContent=showWeightRaw?'Einzelwerte':'Nur Ø';
+    }
   }
   renderWeightChart();
 }
@@ -4364,18 +4371,29 @@ function _doExportSleepPDF(mode){
 let moodTimeFilter='all', moodRatingVal=null, editingMoodId=null, moodChartI=null;
 
 const MOOD_RATINGS={
-  2:{label:'Sehr gut',emoji:'😄',color:'#47ffb8'},
-  1:{label:'Gut',emoji:'🙂',color:'#a8ff47'},
+  2:{label:'Glücklich',emoji:'😄',color:'#e8ff47'},
+  1:{label:'Zufrieden',emoji:'🙂',color:'#47ffb8'},
   0:{label:'Neutral',emoji:'😐',color:'#47c8ff'},
-  '-1':{label:'Schlecht',emoji:'😕',color:'#ffb347'},
-  '-2':{label:'Sehr schlecht',emoji:'😞',color:'#ff4757'}
+  '-1':{label:'Gestresst',emoji:'😣',color:'#ff9f47'},
+  '-2':{label:'Traurig',emoji:'😢',color:'#ff6b6b'},
+  '-3':{label:'Wütend',emoji:'😡',color:'#ff4757'}
 };
+const MOOD_ORDER=[2,1,0,-1,-2,-3];
+function moodInfo(v){ return MOOD_RATINGS[v]||MOOD_RATINGS[0]; }
+function moodFromAverage(avg){
+  if(avg>=1.5)return MOOD_RATINGS[2];
+  if(avg>=.5)return MOOD_RATINGS[1];
+  if(avg>=-.5)return MOOD_RATINGS[0];
+  if(avg>=-1.5)return MOOD_RATINGS[-1];
+  if(avg>=-2.5)return MOOD_RATINGS[-2];
+  return MOOD_RATINGS[-3];
+}
 
 function setMoodTimeFilter(f,btn){
   moodTimeFilter=f;
   document.querySelectorAll('.mdtf').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderMoodChart();
+  renderMood();
 }
 
 function openMoodModal(entry=null){
@@ -4428,46 +4446,52 @@ function renderMoodChart(){
   const filtered=filterByTime(moodEntries,moodTimeFilter);
   if(!filtered.length)return;
   const sorted=[...filtered].sort((a,b)=>a.date.localeCompare(b.date));
-  const vals=sorted.map(e=>e.rating);
+  const vals=sorted.map(e=>Number(e.rating));
   const maVals=calcMA(vals,7);
-  moodChartI=new Chart(fresh,{type:'line',data:{
+  moodChartI=new Chart(fresh,{type:'bar',data:{
     labels:sorted.map(e=>fmtShort(e.date)),
     datasets:[
-      {label:'Stimmung',data:vals,borderColor:'#ff9f47',backgroundColor:'rgba(255,159,71,.07)',pointBackgroundColor:sorted.map(e=>(MOOD_RATINGS[e.rating]||MOOD_RATINGS[0]).color),pointRadius:sorted.length>60?2:5,tension:.3,fill:true,order:2},
-      {label:'Ø 7 Tage',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
+      {label:'Emotion',type:'bar',data:vals,backgroundColor:sorted.map(e=>moodInfo(e.rating).color+'aa'),borderColor:sorted.map(e=>moodInfo(e.rating).color),borderWidth:1,borderRadius:8,barPercentage:.72,categoryPercentage:.72,order:2},
+      {label:'Ø 7 Tage',type:'line',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
     ]
   },options:{
     plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Ø')}}},
     scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-            y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-2,max:2}}
+            y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-3,max:2}}
   }});
 }
 
 function renderMoodAverages(){
   const el=g('mood-averages'); if(!el)return;
   if(!moodEntries.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Keine Daten.</div>';return;}
-  const moodDates=moodEntries.map(e=>e.date).sort();
-  const oldestMood=moodDates[0];
-  function avgFor(days){
-    const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-days);
-    const cutStr=cutoff.toISOString().split('T')[0];
-    if(oldestMood>cutStr) return null;
-    const entries=moodEntries.filter(e=>e.date>=cutStr);
-    if(!entries.length) return null;
-    const avg=+(entries.reduce((a,e)=>a+e.rating,0)/entries.length).toFixed(1);
-    return{avg,n:entries.length};
-  }
-  const periods=[{label:'7 Tage',days:7},{label:'1 Monat',days:30},{label:'3 Monate',days:90},{label:'1 Jahr',days:365}];
-  const rows=periods.map(p=>{
-    const avg=avgFor(p.days);
-    if(!avg) return null;
-    const rIdx=Math.round(avg.avg), r=MOOD_RATINGS[rIdx]||MOOD_RATINGS[0];
-    return`<tr><td style="font-weight:700;font-size:13px;">${p.label}</td>
-      <td style="text-align:center;font-size:22px;">${r.emoji}</td>
-      <td style="text-align:center;font-size:13px;color:${r.color};">${r.label}</td>
-      <td style="text-align:center;font-size:12px;color:var(--muted);">${avg.avg > 0 ? '+' : ''}${avg.avg}</td></tr>`;
-  }).filter(Boolean).join('');
-  el.innerHTML=`<table class="bp-table"><thead><tr><th>Zeitraum</th><th style="text-align:center;">😊</th><th style="text-align:center;">Stimmung</th><th style="text-align:center;">Ø Wert</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const filtered=filterByTime(moodEntries,moodTimeFilter);
+  const sorted=[...filtered].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!sorted.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Keine Daten im Zeitraum.</div>';return;}
+  const recent=sorted.slice(-14);
+    const avg=recent.reduce((a,e)=>a+Number(e.rating),0)/recent.length;
+  const current=moodFromAverage(avg);
+  const pct=Math.max(0,Math.min(100,((avg+3)/5)*100));
+  const total=sorted.length;
+  const rows=MOOD_ORDER.map(v=>{
+    const r=MOOD_RATINGS[v], count=sorted.filter(e=>Number(e.rating)===v).length;
+    const p=total?Math.round(count/total*100):0;
+    return `<div class="mood-dist-row">
+      <div style="font-size:12px;font-weight:700;color:${r.color};">${r.emoji} ${r.label}</div>
+      <div class="mood-dist-bar"><div class="mood-dist-fill" style="width:${p}%;background:${r.color};"></div></div>
+      <div style="font-size:11px;color:var(--muted);text-align:right;">${count}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div style="display:grid;gap:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Barometer · letzte 14 Einträge</div>
+        <div style="font-size:22px;font-weight:800;color:${current.color};margin-top:4px;">${current.emoji} ${current.label}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);text-align:right;">${recent.length} Einträge<br>Ø ${avg>=0?'+':''}${avg.toFixed(1)}</div>
+    </div>
+    <div class="mood-meter"><div class="mood-meter-pin" style="left:${pct}%;background:${current.color};"></div></div>
+    <div>${rows}</div>
+  </div>`;
 }
 
 function renderMoodGroups(){
