@@ -755,13 +755,13 @@
           <button class="fbtn wmet active" onclick="switchWMetric('weight',this)">&#x2696;&#xFE0F; Gewicht</button>
           <button class="fbtn wmet" onclick="switchWMetric('bauch',this)">&#x1F4CF; Bauch</button>
           <button class="fbtn wmet" onclick="switchWMetric('hueft',this)">&#x1F4D0; H&#xFC;fte</button>
-          <button class="fbtn wmet" onclick="switchWMetric('kcal',this)">&#x1F525; Intake</button>
+          <button class="fbtn wmet" onclick="switchWMetric('kcal',this)">&#x1F525; Kalorien</button>
           <button class="fbtn wmet" onclick="switchWMetric('korrelation',this)">&#x1F4C8; Korrelation</button>
+          <button class="fbtn active" id="weight-raw-toggle" onclick="toggleWeightRaw(this)">Einzelwerte</button>
         </div>
         <canvas id="weightChart" height="200"></canvas>
         <div id="korrelation-wrap" style="display:none;">
           <canvas id="korrelationChart" height="220"></canvas>
-          <div id="korrelation-result" style="margin-top:14px;"></div>
         </div>
       </div>
       <div class="week-compare"><div class="chart-title" style="margin-bottom:14px;">7-TAGE WOCHENVERGLEICH</div>
@@ -1185,7 +1185,7 @@
     <div class="field"><label>Datum</label><input type="date" id="w-date"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="field"><label>Gewicht (kg)</label><input type="number" id="w-kg" placeholder="82.5" step="0.1" min="0"></div>
-      <div class="field"><label>🔥 Kalorienintake (kcal)</label><input type="number" id="w-kcal" placeholder="2200" min="0"></div>
+      <div class="field"><label>🔥 Kalorien (kcal)</label><input type="number" id="w-kcal" placeholder="2200" min="0"></div>
       <div class="field"><label>Bauchumfang (cm)</label><input type="number" id="w-bauch" placeholder="88" step="0.1" min="0"></div>
       <div class="field"><label>Hüftumfang (cm)</label><input type="number" id="w-hueft" placeholder="98" step="0.1" min="0"></div>
     </div>
@@ -1503,7 +1503,7 @@ let sessions=[], plans=[], weightEntries=[], bpEntries=[], sleepEntries=[], mood
 let currentSessionId=null, editingWeightId=null, editingPlanId=null, editingBPId=null;
 let activeTab='log';
 let pChartI=null, wkChartI=null, wtChartI=null, bpChartI=null;
-let currentWMetric='weight', currentBPView='both';
+let currentWMetric='weight', currentBPView='both', showWeightRaw=true;
 let exCounter=0, setCounters={}, planExCounter=0, awSetCounters={};
 let timerRunning=false, timerSecs=0, timerTarget=null, timerStart=null, timerInterval=null, timerMinimized=false;
 let appReady=false;
@@ -2373,7 +2373,10 @@ function toggleTimerMin(){ timerMinimized=!timerMinimized; const sec=g('timer-se
 // ── LOG ──
 function populateLogPlanSelect(){ const sel=g('log-plan-sel'); sel.innerHTML='<option value="">— Plan wählen —</option>'; plans.filter(p=>!p.archived).forEach(p=>sel.innerHTML+=`<option value="${p.id}">${p.name}</option>`); }
 function startSelectedPlan(){ const pid=g('log-plan-sel').value; if(!pid){showToast('Bitte Plan auswählen.',true);return;} const plan=plans.find(p=>p.id===pid); if(plan) startWorkout(plan); }
-function openBlankSession(){ _editingSessionId=null; exCounter=0;setCounters={}; g('s-date').value=today(); g('s-name').value=''; g('ex-container').innerHTML=''; addExercise(); g('modal-session').classList.add('open'); }
+function openBlankSession(){
+  startWorkout({name:'Leere Einheit',exercises:[]});
+  setTimeout(()=>addAWExtraExercise(),50);
+}
 
 // ── ACTIVE WORKOUT ──
 function startWorkout(plan){
@@ -2396,13 +2399,15 @@ function startWorkout(plan){
   exercises.forEach((ex,ei)=>{
     const lastEx = lastExMap[ex.name.toLowerCase()];
     const lastSets = lastEx?.sets||[];
+    const repTarget = ex.defaultReps ? String(ex.defaultReps) : '';
+    const repTargetHint = repTarget ? `<span style="font-size:11px;color:var(--muted);font-family:'DM Sans',sans-serif;letter-spacing:0;margin-left:6px;">${repTarget} Wdh.</span>` : '';
     
     // No separate hint box - last values shown as yellow-tinted placeholder inputs
     
     let setsHtml='';
     for(let si=0;si<ex.defaultSets;si++){
       const lastKg = lastSets[si]?.kg||'';
-      const lastRp = lastSets[si]?.reps||(ex.defaultReps||'');
+      const lastRp = lastSets[si]?.reps||repTarget;
       const lastRemark = lastEx?.remark||'';
       // Use data-last attributes for JS-driven placeholder styling
       setsHtml+=`<div class="set-row" id="aws-${ei}-${si}">
@@ -2414,14 +2419,14 @@ function startWorkout(plan){
     }
     exHtml+=`<div class="exercise-block" id="aw-ex-${ei}">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--accent3);flex:1;cursor:pointer;" onclick="toggleAWExercise(${ei})">${ex.name} <span id="aw-ex-arr-${ei}" style="font-size:12px;">▼</span></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--accent3);flex:1;cursor:pointer;" onclick="toggleAWExercise(${ei})">${ex.name}${repTargetHint} <span id="aw-ex-arr-${ei}" style="font-size:12px;">▼</span></div>
         <button class="btn btn-ghost btn-xs" onclick="swapAWExercise(${ei},'${ex.name.replace(/'/g,"\'")}',event)" title="Tauschen" style="padding:4px 8px;">⇄</button>
         <button class="btn btn-danger btn-xs" onclick="removeAWExercise(${ei})" title="Für heute entfernen" style="padding:4px 8px;">✕</button>
       </div>
       <div id="aw-ex-body-${ei}">
         <div class="sets-header"><div>#</div><div>REPS</div><div>KG</div><div></div></div>
         <div id="aw-sets-${ei}">${setsHtml}</div>
-        <button class="btn btn-ghost btn-xs" style="width:100%;margin-top:6px;" onclick="addAWSet(${ei},${ex.defaultSets},${ex.defaultReps||0})">+ Set</button>
+        <button class="btn btn-ghost btn-xs" style="width:100%;margin-top:6px;" onclick="addAWSet(${ei},${ex.defaultSets},'${String(ex.defaultReps||'').replace(/'/g,"\\'")}')">+ Set</button>
         <div class="field" style="margin-top:10px;"><label>Bemerkung</label><textarea id="aw-rmk-${ei}" placeholder="${lastEx?.remark||'Optional…'}" style="min-height:44px;resize:vertical;font-size:13px;" class="aw-input" data-last="${lastEx?.remark||''}" oninput="awInputChanged(this)"></textarea></div>
       </div>
     </div>`;
@@ -2455,11 +2460,13 @@ function addAWSet(ei,startCount,defReps){
   if(!awSetCounters[ei]) awSetCounters[ei]=startCount||3;
   const si=awSetCounters[ei]++;
   const d=document.createElement('div'); d.className='set-row'; d.id=`aws-${ei}-${si}`;
+  const repTarget=defReps?String(defReps):'';
   d.innerHTML=`<div class="set-num">${si+1}</div>
-    <input type="number" class="aw-input" placeholder="—" id="aw-rp-${ei}-${si}" value="${defReps||''}" oninput="awInputChanged(this)">
+    <input type="number" class="aw-input" data-last="${repTarget}" placeholder="${repTarget||'—'}" id="aw-rp-${ei}-${si}" value="" oninput="awInputChanged(this)">
     <input type="number" class="aw-input" placeholder="—" id="aw-kg-${ei}-${si}" min="0" step="0.5" oninput="awInputChanged(this)">
     <button class="del-set" onclick="document.getElementById('aws-${ei}-${si}').remove()">✕</button>`;
   g('aw-sets-'+ei)?.appendChild(d);
+  initAWInputStyles();
 }
 let awExtraCounter = 1000; // offset to avoid collision with plan exercise indices
 function addAWExtraExercise() {
@@ -2619,6 +2626,11 @@ async function saveActiveWorkout(exercises){
     });
     exList.push({name,sets,remark:g('aw-xrmk-'+ei)?.value||''});
   });
+  if(!exList.length){
+    showToast('Bitte mindestens eine Übung eintragen.',true);
+    if(btn){btn.disabled=false;btn.textContent='💾 Speichern';}
+    return;
+  }
   setSyncState('syncing');
   const{error}=await sb.from('sessions').insert({user_id:currentUser.id,date:today(),name,exercises:exList});
   if(error){showToast('Fehler: '+error.message,true);setSyncState('error');if(btn){btn.disabled=false;btn.textContent='💾 Speichern';}return;}
@@ -2863,7 +2875,7 @@ function addPlanEx(name='',sets=3,reps=10){
       </div>
       <div>
         <label style="font-size:10px;margin-bottom:3px;">Wdh.</label>
-        <input type="number" id="pex-r-${id}" value="${reps}" min="1" max="100" style="text-align:center;">
+        <input type="text" id="pex-r-${id}" value="${reps}" inputmode="numeric" pattern="[0-9\\-]*" placeholder="8-12" style="text-align:center;">
       </div>
       <button class="del-set" style="margin-bottom:2px;" onclick="document.getElementById('pex-${id}').remove();updatePexNums()">✕</button>
     </div>`;
@@ -2937,13 +2949,16 @@ function _planTouchTarget(x,y){
 async function savePlan(){
   const name=g('p-name').value.trim(); if(!name){alert('Bitte Planname eingeben.');return;}
   const exercises=[];
+  let invalidReps=false;
   document.querySelectorAll('[id^="pex-n-"]').forEach(inp=>{
     const id=inp.id.replace('pex-n-','');
     const n=inp.value.trim();
     const s=parseInt(g('pex-s-'+id)?.value)||3;
-    const r=parseInt(g('pex-r-'+id)?.value)||10;
+    const r=(g('pex-r-'+id)?.value||'10').trim().replace(/\s*-\s*/g,'-')||'10';
+    if(!/^\d+(-\d+)?$/.test(r)){ invalidReps=true; return; }
     if(n) exercises.push({name:n,defaultSets:s,defaultReps:r});
   });
+  if(invalidReps){alert('Wiederholungen bitte als Zahl oder Range eingeben, z.B. 8 oder 8-12.');return;}
   if(!exercises.length){alert('Mindestens eine Übung.');return;}
   const saveBtn=g('plan-save-btn'); if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Speichert…';}
   setSyncState('syncing');
@@ -3236,6 +3251,15 @@ function switchWMetric(m,btn){
   btn.classList.add('active');
   renderWeightChart();
 }
+function toggleWeightRaw(btn){
+  showWeightRaw=!showWeightRaw;
+  const b=btn||g('weight-raw-toggle');
+  if(b){
+    b.classList.toggle('active',showWeightRaw);
+    b.textContent=showWeightRaw?'Einzelwerte':'Nur Ø';
+  }
+  renderWeightChart();
+}
 function renderWeightChart(){
   // Handle correlation view first (before touching weightChart canvas)
   const kWrap = g('korrelation-wrap');
@@ -3256,16 +3280,18 @@ function renderWeightChart(){
   oldW.parentNode.replaceChild(freshW,oldW);
 
   const m=currentWMetric;
-  const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorienintake (kcal)'};
+  const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorien (kcal)'};
   const colors={weight:'#47c8ff',bauch:'#47ffb8',hueft:'#c847ff',kcal:'#ff9f47'};
   const filtered=filterByTime(weightEntries, wTimeFilter);
   const pts=filtered.filter(e=>e[m]).map(e=>({date:e.date,val:parseFloat(e[m])})).sort((a,b)=>a.date.localeCompare(b.date));
   const maVals = m!=='kcal' ? calcMA(pts.map(p=>p.val),7) : calcMA(pts.map(p=>p.val),7);
   const col=colors[m]||'#47c8ff';
   const datasets=[
-    {label:lmap[m],data:pts.map(p=>p.val),borderColor:col,backgroundColor:`rgba(${col==='#47c8ff'?'71,200,255':col==='#47ffb8'?'71,255,184':col==='#c847ff'?'200,71,255':'255,159,71'},.08)`,pointBackgroundColor:col,pointRadius:pts.length>60?2:4,tension:.3,fill:true,order:2},
     {label:'Ø 7 Tage',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[],order:1,spanGaps:true}
   ];
+  if(showWeightRaw){
+    datasets.unshift({label:lmap[m],data:pts.map(p=>p.val),borderColor:col,backgroundColor:`rgba(${col==='#47c8ff'?'71,200,255':col==='#47ffb8'?'71,255,184':col==='#c847ff'?'200,71,255':'255,159,71'},.08)`,pointBackgroundColor:col,pointRadius:pts.length>60?2:4,tension:.3,fill:true,order:2});
+  }
   wtChartI=new Chart(g('weightChart'),{type:'line',data:{labels:pts.map(p=>fmtShort(p.date)),datasets},options:{plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Trend')}}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
 }
 
@@ -3280,7 +3306,6 @@ function pearson(xs, ys){
 }
 
 function renderKorrelationChart(){
-  const resEl=g('korrelation-result');
   const chartEl=g('korrelationChart');
 
   // Build date-indexed maps from filtered entries
@@ -3293,11 +3318,6 @@ function renderKorrelationChart(){
 
   // Check if we have any kcal data at all
   if(!Object.keys(kMap).length){
-    if(resEl) resEl.innerHTML=`<div style="text-align:center;padding:24px 16px;color:var(--muted);font-size:13px;">
-      Noch keine Kalorien-Daten vorhanden.<br><br>
-      Trage täglich deinen Kalorienintake (🔥) in der Gewichtsmessung ein,<br>
-      damit die Korrelation berechnet werden kann.
-    </div>`;
     return;
   }
 
@@ -3329,109 +3349,9 @@ function renderKorrelationChart(){
     if(kMap[lagStr]!==undefined) chartPairs.push({date:d, kDate:lagStr, w:wMap[d], k:kMap[lagStr]});
   });
 
-  // Render result box
+  // Only render the chart when there are enough paired data points.
   const minPairs = wTimeFilter==='14d' ? 5 : 14;
-  if(chartPairs.length<minPairs){
-    if(resEl) resEl.innerHTML=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Zu wenig Datenpunkte – mindestens ${minPairs} Tage mit Gewicht UND Kalorien benötigt.<br>Aktuell: ${chartPairs.length} Tage.</div>`;
-    return;
-  }
-
-  const r=Math.round(bestR*100)/100;
-  const absR=Math.abs(r);
-  const rStr=(r>=0?'+':'')+r.toFixed(2).replace('.',',');
-  const strength = absR>=0.7?'Starker':absR>=0.4?'Moderater':absR>=0.2?'Schwacher':'Kein';
-  const direction = r>=0?'positiver':'negativer';
-  const color = absR>=0.5?'#47ffb8':absR>=0.3?'#e8ff47':'#6b6b80';
-  const lagText = bestLag===0?'am selben Tag':`${bestLag} Tag${bestLag>1?'e':''} später`;
-
-  // Detect goal from trend (last 30 days vs first 30 days of filtered data)
-  const wSeries=chartPairs.map(p=>p.w);
-  const firstAvg=wSeries.slice(0,Math.min(14,wSeries.length)).reduce((a,b)=>a+b)/Math.min(14,wSeries.length);
-  const lastAvg=wSeries.slice(-Math.min(14,wSeries.length)).reduce((a,b)=>a+b)/Math.min(14,wSeries.length);
-  const trend=lastAvg-firstAvg; // negative = losing weight, positive = gaining
-
-  // Also check wunschgewicht from macro calculator if saved
-  let goal='halten'; // default
-  const saved=localStorage.getItem('ironlog_macro_save');
-  if(saved){try{const d=JSON.parse(saved);const w=parseFloat(d.gewicht),wu=parseFloat(d.wunsch);if(w&&wu){if(wu<w-0.5)goal='reduzieren';else if(wu>w+0.5)goal='erhöhen';else goal='halten';}}catch(e){}}
-  else if(trend<-0.5) goal='reduzieren';
-  else if(trend>0.5) goal='erhöhen';
-
-  // Smart concrete recommendation
-  const avgKcalAll=Math.round(chartPairs.reduce((a,p)=>a+p.k,0)/chartPairs.length);
-  let recommendation='';
-  if(absR>=0.2){
-    const avgKcal=avgKcalAll;
-
-
-    // Stagnation: did weight change in last 14 days?
-    const last14=chartPairs.slice(-14);
-    const last14wAvg=last14.length?last14.reduce((a,p)=>a+p.w,0)/last14.length:null;
-    const prev14=chartPairs.slice(-28,-14);
-    const prev14wAvg=prev14.length?prev14.reduce((a,p)=>a+p.w,0)/prev14.length:null;
-    const weeklyChange=last14wAvg&&prev14wAvg?((last14wAvg-prev14wAvg)/2):null; // per week approx
-    const stagnating=weeklyChange!==null&&Math.abs(weeklyChange)<0.15;
-    const losing=weeklyChange!==null&&weeklyChange<-0.15;
-    const gaining=weeklyChange!==null&&weeklyChange>0.15;
-
-    // Current vs goal weight
-    const saved=localStorage.getItem('ironlog_macro_save');
-    let currentW=last14wAvg||null, wunschW=null;
-    if(saved){try{const d=JSON.parse(saved);if(d.wunsch)wunschW=parseFloat(d.wunsch);}catch(e){}}
-    const kgToGo=wunschW&&currentW?Math.abs(currentW-wunschW):null;
-
-    if(goal==='reduzieren'){
-      if(stagnating&&r>0.2){
-        // Weight stuck, need to reduce - calculate how much
-        const defizit=Math.round(weeklyChange===0?200:150); // modest cut
-        recommendation=`Dein Gewicht stagniert (Ø ±${Math.abs(weeklyChange||0).toFixed(2)} kg/Woche). Mit aktuell Ø ${avgKcal} kcal/Tag empfiehlt sich eine Reduktion um ca. <b>${defizit} kcal</b> auf <b>${avgKcal-defizit} kcal/Tag</b>.${kgToGo?` Bis zum Ziel (${wunschW} kg) sind es noch ca. ${kgToGo.toFixed(1)} kg.`:''}`;
-      } else if(losing){
-        recommendation=`Du bist auf Kurs: Gewichtsabnahme von ca. ${Math.abs(weeklyChange||0).toFixed(2)} kg/Woche bei Ø ${avgKcal} kcal/Tag.${kgToGo?` Noch ca. ${kgToGo.toFixed(1)} kg bis zum Ziel (${wunschW} kg).`:''} Aktuelle Strategie beibehalten.`;
-      } else if(gaining){
-        const defizit=Math.round(250+(Math.abs(weeklyChange||0)*1000*0.3));
-        recommendation=`Dein Gewicht steigt trotz Reduktionsziel. Reduziere auf ca. <b>${avgKcal-defizit} kcal/Tag</b> (−${defizit} kcal).${kgToGo?` Ziel: ${wunschW} kg, noch ${kgToGo.toFixed(1)} kg.`:''}`;
-      } else {
-        recommendation=`Aktueller Ø: ${avgKcal} kcal/Tag. Für kontinuierliche Abnahme solltest du diesen Wert konstant halten oder leicht reduzieren.`;
-      }
-    } else if(goal==='erhöhen'){
-      if(stagnating&&r>0.2){
-        const plus=Math.round(150);
-        recommendation=`Dein Gewicht stagniert. Erhöhe deinen Kalorienintake von Ø ${avgKcal} um ca. <b>${plus} kcal</b> auf <b>${avgKcal+plus} kcal/Tag</b>.${kgToGo?` Noch ${kgToGo.toFixed(1)} kg bis zum Ziel (${wunschW} kg).`:''}`;
-      } else if(gaining){
-        recommendation=`Guter Aufbau: +${(weeklyChange||0).toFixed(2)} kg/Woche bei Ø ${avgKcal} kcal/Tag.${kgToGo?` Noch ${kgToGo.toFixed(1)} kg bis ${wunschW} kg.`:''} Beibehalten.`;
-      } else if(losing){
-        const plus=Math.round(300);
-        recommendation=`Trotz Aufbauziel verlierst du Gewicht. Erhöhe auf ca. <b>${avgKcal+plus} kcal/Tag</b> (+${plus} kcal).`;
-      } else {
-        recommendation=`Ø ${avgKcal} kcal/Tag. Für gezielten Aufbau um 150–200 kcal erhöhen.`;
-      }
-    } else { // halten
-      if(stagnating){
-        recommendation=`Dein Gewicht ist stabil bei Ø ${last14wAvg?last14wAvg.toFixed(1):'—'} kg. Aktuelle Kalorienzufuhr von Ø ${avgKcal} kcal/Tag beibehalten.`;
-      } else if(losing){
-        const plus=Math.round(Math.abs(weeklyChange||0)*7700/7*0.5);
-        recommendation=`Du verlierst ungewollt Gewicht (${(weeklyChange||0).toFixed(2)} kg/Woche). Erhöhe auf ca. <b>${avgKcal+plus} kcal/Tag</b> (+${plus} kcal).`;
-      } else if(gaining){
-        const minus=Math.round((weeklyChange||0)*7700/7*0.5);
-        recommendation=`Du nimmst ungewollt zu (+${(weeklyChange||0).toFixed(2)} kg/Woche). Reduziere auf ca. <b>${avgKcal-minus} kcal/Tag</b> (−${minus} kcal).`;
-      } else {
-        recommendation=`Aktuell Ø ${avgKcal} kcal/Tag. Gute Basis zum Halten – Konsistenz ist entscheidend.`;
-      }
-    }
-  }
-
-  const goalLabel={'reduzieren':'🎯 Ziel: Gewicht reduzieren','erhöhen':'🎯 Ziel: Gewicht erhöhen','halten':'🎯 Ziel: Gewicht halten'}[goal];
-
-  if(resEl) resEl.innerHTML=`
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
-      ${absR>=0.2?`<div style="font-size:15px;font-weight:700;color:${color};margin-bottom:4px;">${strength} ${direction} Zusammenhang</div>`:''}
-      ${absR>=0.2?`<div style="font-size:13px;color:var(--text);margin-bottom:10px;">Dein Gewicht reagiert tendenziell <b>${lagText}</b> auf veränderten Kalorienintake.</div>`:`<div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Kein erkennbarer Zusammenhang zwischen Kalorien und Gewicht.</div>`}
-      <div style="font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);">KORRELATION (PEARSON r: ${rStr})</div>
-      ${recommendation?`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--muted);margin-bottom:6px;">${goalLabel} · EMPFEHLUNG</div>
-        <div style="font-size:12px;color:var(--text);line-height:1.5;">${recommendation}</div>
-      </div>`:''}
-    </div>`;
+  if(chartPairs.length<minPairs) return;
 
   // Build dual-axis chart
   const old=g('korrelationChart'); if(!old)return;
@@ -3450,10 +3370,9 @@ function renderKorrelationChart(){
     data:{
       labels:chartPairs.map(p=>fmtShort(p.date)),
       datasets:[
-        {label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:3,yAxisID:'yW'},
         {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
-        {label:'Ø Intake',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true}
-      ]
+        {label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true}
+      ].concat(showWeightRaw?[{label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:3,yAxisID:'yW'}]:[])
     },
     options:{
       plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:6,boxHeight:6,usePointStyle:true,pointStyle:'circle'}}},
@@ -3474,7 +3393,7 @@ function renderWeekCompare(){
   if(keys.length<2){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Mindestens 2 Wochen benötigt.</div>';return;}
   function wavg(arr,f){const v=arr.map(e=>parseFloat(e[f])).filter(v=>!isNaN(v)&&v>0);return v.length?(v.reduce((a,b)=>a+b)/v.length).toFixed(1):null;}
   function cell(ck,pk,f){const c=wavg(weeks[ck],f),p=pk?wavg(weeks[pk],f):null;if(!c)return'<span style="color:var(--muted)">—</span>';if(!p)return c;const diff=(parseFloat(c)-parseFloat(p)).toFixed(1),n=parseFloat(diff);const cls=n<0?'d-pos':n>0?'d-neg':'d-neu',sign=n>0?'+':'';return`${c} <span class="${cls}">(${sign}${diff})</span>`;}
-  let html=`<div class="week-row wh"><div>WOCHE</div><div>⚖️ KG</div><div>📏 BAUCH</div><div>📐 HÜFTE</div><div>🔥 INTAKE</div></div>`;
+  let html=`<div class="week-row wh"><div>WOCHE</div><div>⚖️ KG</div><div>📏 BAUCH</div><div>📐 HÜFTE</div><div>🔥 KALORIEN</div></div>`;
   keys.forEach((k,i)=>{const pk=i>0?keys[i-1]:null;html+=`<div class="week-row"><div class="week-lbl">${fmtD(k,{day:'2-digit',month:'short'})}</div><div>${cell(k,pk,'weight')}</div><div>${cell(k,pk,'bauch')}</div><div>${cell(k,pk,'hueft')}</div><div>${cell(k,pk,'kcal')}</div></div>`;});
   el.innerHTML=html;
 }
