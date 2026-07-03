@@ -159,7 +159,9 @@
     .rating-btn.active{border-color:var(--accent3);color:var(--accent3);background:rgba(71,200,255,.12);}
     .plan-archived{opacity:.55;}
     .plan-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:10px;}
+    .plan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;}
     .plan-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent3);margin-bottom:6px;}
+    .plan-set-badge{flex-shrink:0;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap;}
     .plan-ex-list{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.9;}
     .plan-actions{display:flex;gap:8px;flex-wrap:wrap;}
     .plan-ex-item.drag-over{border-top:2px solid var(--accent3);opacity:.7;}
@@ -318,6 +320,13 @@
     .macro-result-val.accent4{color:var(--accent4);}
     .macro-highlight-deficit{background:rgba(71,200,255,.06);border-radius:8px;padding:10px 8px !important;margin:2px -8px;}
     .macro-highlight-maint{background:rgba(71,255,184,.06);border-radius:8px;padding:10px 8px !important;margin:2px -8px;}
+    .macro-duo-inputs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+    .macro-balance-chart{display:grid;gap:9px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
+    .macro-balance-row{display:grid;grid-template-columns:116px 1fr 86px;gap:8px;align-items:center;}
+    .macro-balance-label{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.7px;text-transform:uppercase;}
+    .macro-balance-track{height:10px;border-radius:999px;background:var(--surface);overflow:hidden;}
+    .macro-balance-fill{height:100%;border-radius:999px;min-width:2px;transition:width .25s ease;}
+    .macro-balance-value{text-align:right;font-size:11px;font-weight:800;color:var(--text);}
     .fab-blue{background:var(--accent3);color:#0a0a0f;box-shadow:0 4px 20px rgba(71,200,255,.4);}
     .fab-teal{background:var(--accent4);color:#0a0a0f;box-shadow:0 4px 20px rgba(71,255,184,.4);}
     .fab-red{background:var(--accent2);color:#fff;box-shadow:0 4px 20px rgba(255,71,87,.4);}
@@ -980,12 +989,23 @@
           <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steps" min="0" max="50000" step="500" value="10000" oninput="calcMacros()"><span class="macro-unit">/ Tag</span></div>
         </div>
         <div class="macro-row">
-          <label class="macro-label">Steigung</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steigung" min="0" max="30" step="0.5" value="0" oninput="calcMacros()"><span class="macro-unit">%</span></div>
+          <label class="macro-label">Schritte Steigung</label>
+          <div class="macro-duo-inputs">
+            <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steps-incline" min="0" max="50000" step="500" value="0" oninput="calcMacros()"><span class="macro-unit">Schritte</span></div>
+            <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steigung" min="0" max="30" step="0.5" value="0" oninput="calcMacros()"><span class="macro-unit">%</span></div>
+          </div>
         </div>
         <div class="macro-row">
           <label class="macro-label">Arbeitssätze</label>
           <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-saetze" min="0" max="300" step="1" value="20" oninput="calcMacros()"><span class="macro-unit">/ Woche</span></div>
+        </div>
+        <div class="macro-row">
+          <label class="macro-label">NEAT</label>
+          <select class="macro-select" id="mc-neat" onchange="calcMacros()">
+            <option value="low">Niedrig</option>
+            <option value="mid" selected>Mittel</option>
+            <option value="high">Hoch</option>
+          </select>
         </div>
         <div class="macro-row">
           <label class="macro-label">Anpassung</label>
@@ -1004,8 +1024,12 @@
           <span class="macro-result-val accent3" id="mr-schritte">—</span>
         </div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Kalorien durch Krafttraining</span>
+          <span class="macro-result-label">Krafttraining Ø/Tag aus Wochen-Sätzen</span>
           <span class="macro-result-val accent4" id="mr-training">—</span>
+        </div>
+        <div class="macro-result-row">
+          <span class="macro-result-label">NEAT-Pauschale</span>
+          <span class="macro-result-val accent3" id="mr-neat">—</span>
         </div>
         <div class="macro-result-row">
           <span class="macro-result-label">Zwischensumme ohne TEF</span>
@@ -1044,6 +1068,23 @@
           <span class="macro-result-val" id="mr-week-balance">—</span>
         </div>
         <div id="mr-week-note" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
+        <div class="macro-balance-chart">
+          <div class="macro-balance-row">
+            <div class="macro-balance-label">Erhalt</div>
+            <div class="macro-balance-track"><div class="macro-balance-fill" id="mb-maint" style="background:var(--accent4);width:0%;"></div></div>
+            <div class="macro-balance-value" id="mb-maint-val">—</div>
+          </div>
+          <div class="macro-balance-row">
+            <div class="macro-balance-label">Anpassung</div>
+            <div class="macro-balance-track"><div class="macro-balance-fill" id="mb-adjust" style="background:var(--accent3);width:0%;"></div></div>
+            <div class="macro-balance-value" id="mb-adjust-val">—</div>
+          </div>
+          <div class="macro-balance-row">
+            <div class="macro-balance-label">Ziel/Woche</div>
+            <div class="macro-balance-track"><div class="macro-balance-fill" id="mb-target" style="background:var(--accent);width:0%;"></div></div>
+            <div class="macro-balance-value" id="mb-target-val">—</div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -2761,8 +2802,10 @@ function renderPlans(){
   if(!plans.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📌</div><div class="empty-text">Noch keine Pläne.<br>Tippe auf + um einen zu erstellen.</div></div>`;return;}
   const active=plans.filter(p=>!p.archived);
   const archived=plans.filter(p=>p.archived);
-  const cardHTML=p=>`<div class="plan-card${p.archived?' plan-archived':''}">
-    <div class="plan-name">${p.name}${p.archived?'<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px;">ARCHIVIERT</span>':''}</div>
+  const cardHTML=p=>{
+    const setTotal=(p.exercises||[]).reduce((sum,e)=>sum+(parseInt(e.defaultSets)||0),0);
+    return `<div class="plan-card${p.archived?' plan-archived':''}">
+    <div class="plan-head"><div class="plan-name">${p.name}${p.archived?'<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px;">ARCHIVIERT</span>':''}</div><div class="plan-set-badge">${setTotal} Sätze</div></div>
     <div class="plan-ex-list">${(p.exercises||[]).map((e,i)=>`${i+1}. ${e.name} <span style="color:var(--muted)">(${e.defaultSets} Sets × ${e.defaultReps||'?'} Wdh.)</span>`).join(' · ')}</div>
     <div class="plan-actions">
       ${!p.archived?`<button class="btn btn-blue btn-sm" onclick="startPlanFromPlans('${p.id}')">▶ Starten</button>`:''}
@@ -2771,7 +2814,7 @@ function renderPlans(){
       <button class="btn btn-ghost btn-sm" onclick="toggleArchivePlan('${p.id}',${!p.archived})" title="${p.archived?'Reaktivieren':'Archivieren'}">${p.archived?'↩ Reaktivieren':'📦 Archiv'}</button>
       <button class="btn btn-danger btn-sm" onclick="deletePlan('${p.id}')">🗑</button>
     </div>
-  </div>`;
+  </div>`};
   let html=active.map(cardHTML).join('');
   if(archived.length){
     html+=`<div class="year-group" id="plan-archive-group">
@@ -4697,28 +4740,43 @@ function normalizeMacroHeightInput(){
   el.value=macroHeightMeters(el.value).toFixed(2);
 }
 function macroKcal(v){ return `${Math.round(v)} kcal`; }
-function macroCalcDay(weight,height,steps,incline,sets){
+function macroStepKcal(weight,height,steps,incline=0){
+  return (steps/1000)*weight*height*0.27*(1+(incline*0.065));
+}
+function macroNeatInfo(level,weight){
+  const defs={
+    low:{label:'Niedrig',factor:.5},
+    mid:{label:'Mittel',factor:1},
+    high:{label:'Hoch',factor:2}
+  };
+  const info=defs[level]||defs.mid;
+  return {...info,kcal:weight*info.factor};
+}
+function macroCalcDay(weight,height,steps,stepsIncline,incline,sets,neatLevel='mid'){
   const ruhe=weight*22;
-  const stepFactor=1+(incline*0.065);
-  const schritte=(steps/1000)*weight*height*0.27*stepFactor;
+  const schritte=macroStepKcal(weight,height,steps,0)+macroStepKcal(weight,height,stepsIncline,incline);
   const training=sets*weight*0.11;
-  const zwischen=ruhe+schritte+training;
+  const neat=macroNeatInfo(neatLevel,weight);
+  const zwischen=ruhe+schritte+training+neat.kcal;
   const erhaltung=zwischen/0.90;
-  return {ruhe,schritte,training,zwischen,erhaltung};
+  return {ruhe,schritte,training,neat,zwischen,erhaltung};
 }
 function calcMacros(){
   const weight=macroNum('mc-gewicht',90);
   const height=macroHeightMeters(g('mc-groesse')?.value||1.84);
   const steps=macroNum('mc-steps',10000);
+  const stepsIncline=macroNum('mc-steps-incline',0);
   const incline=macroNum('mc-steigung',0);
   const weeklySets=macroNum('mc-saetze',20);
   const sets=weeklySets/7;
+  const neatLevel=g('mc-neat')?.value||'mid';
   const adjust=macroNum('mc-kcal-adjust',0);
 
-  const day=macroCalcDay(weight,height,steps,incline,sets);
+  const day=macroCalcDay(weight,height,steps,stepsIncline,incline,sets,neatLevel);
   g('mr-ruhe').textContent=macroKcal(day.ruhe);
   g('mr-schritte').textContent=macroKcal(day.schritte);
   g('mr-training').textContent=macroKcal(day.training);
+  g('mr-neat').textContent=`${day.neat.label} · ${macroKcal(day.neat.kcal)}`;
   g('mr-zwischen').textContent=macroKcal(day.zwischen);
   g('mr-erhaltung').textContent=macroKcal(day.erhaltung);
 
@@ -4726,6 +4784,9 @@ function calcMacros(){
   const weekAvg=weekTotal/7;
   const adjustedTarget=weekAvg+adjust;
   const weekBalance=adjust*7;
+  const weekTarget=adjustedTarget*7;
+  const fatKg=Math.abs(weekBalance)/7000;
+  const maxBar=Math.max(weekTotal,weekTarget,Math.abs(weekBalance),1);
   g('mr-week-total').textContent=macroKcal(weekTotal);
   g('mr-week-avg').textContent=macroKcal(weekAvg);
   g('mr-week-rec').textContent=`ca. ${Math.round(weekAvg)} kcal/Tag`;
@@ -4734,7 +4795,20 @@ function calcMacros(){
   g('mr-week-adjusted-target').textContent=macroKcal(adjustedTarget);
   g('mr-week-balance').textContent=weekBalance===0?'0 kcal/Woche':`${weekBalance>0?'+':''}${Math.round(weekBalance)} kcal/Woche`;
   g('mr-week-balance').className='macro-result-val '+(weekBalance>0?'accent2':weekBalance<0?'accent3':'accent4');
-  g('mr-week-note').textContent='Arbeitssätze werden als Wochenwert erfasst und gleichmäßig auf den Tagesdurchschnitt verteilt.';
+  g('mr-week-note').textContent=weekBalance===0
+    ? `${day.neat.label}-NEAT ist eingerechnet. Arbeitssätze werden als Wochenwert gleichmäßig verteilt.`
+    : `${day.neat.label}-NEAT eingerechnet. ${weekBalance<0?'Theoretischer Fettverlust':'Theoretischer Fettaufbau'}: ca. ${fatKg.toFixed(2).replace('.',',')} kg/Woche bei 7.000 kcal pro kg Fett.`;
+  const setBar=(id,val,color)=>{
+    const el=g(id); if(!el)return;
+    el.style.width=Math.max(3,Math.min(100,Math.abs(val)/maxBar*100))+'%';
+    if(color)el.style.background=color;
+  };
+  setBar('mb-maint',weekTotal,'var(--accent4)');
+  setBar('mb-adjust',weekBalance,weekBalance<0?'var(--accent3)':weekBalance>0?'var(--accent2)':'var(--muted)');
+  setBar('mb-target',weekTarget,'var(--accent)');
+  if(g('mb-maint-val'))g('mb-maint-val').textContent=macroKcal(weekTotal);
+  if(g('mb-adjust-val'))g('mb-adjust-val').textContent=weekBalance===0?'0':`${weekBalance>0?'+':''}${Math.round(weekBalance)}`;
+  if(g('mb-target-val'))g('mb-target-val').textContent=macroKcal(weekTarget);
   if(localStorage.getItem('ironlog_macro_save'))saveMacroInputs();
 }
 
@@ -4746,8 +4820,10 @@ function prefillMacrosFromData(){
       if(g('mc-gewicht'))g('mc-gewicht').value=d.gewicht||90;
       if(g('mc-groesse'))g('mc-groesse').value=macroHeightMeters(d.groesse||1.84).toFixed(2);
       if(g('mc-steps'))g('mc-steps').value=d.steps||10000;
+      if(g('mc-steps-incline'))g('mc-steps-incline').value=d.stepsIncline??0;
       if(g('mc-steigung'))g('mc-steigung').value=d.steigung??0;
       if(g('mc-saetze'))g('mc-saetze').value=d.saetze??20;
+      if(g('mc-neat'))g('mc-neat').value=d.neat||'mid';
       if(g('mc-kcal-adjust'))g('mc-kcal-adjust').value=d.kcalAdjust??0;
       updateMacroSaveBtn(true);
       return;
@@ -4784,8 +4860,10 @@ function saveMacroInputs(){
     gewicht:g('mc-gewicht')?.value||90,
     groesse:g('mc-groesse')?.value||1.84,
     steps:g('mc-steps')?.value||10000,
+    stepsIncline:g('mc-steps-incline')?.value||0,
     steigung:g('mc-steigung')?.value||0,
     saetze:g('mc-saetze')?.value||20,
+    neat:g('mc-neat')?.value||'mid',
     kcalAdjust:g('mc-kcal-adjust')?.value||0
   };
   localStorage.setItem('ironlog_macro_save',JSON.stringify(d));
@@ -4796,8 +4874,10 @@ function resetMacroInputs(){
   if(g('mc-gewicht'))g('mc-gewicht').value=90;
   if(g('mc-groesse'))g('mc-groesse').value='1.84';
   if(g('mc-steps'))g('mc-steps').value=10000;
+  if(g('mc-steps-incline'))g('mc-steps-incline').value=0;
   if(g('mc-steigung'))g('mc-steigung').value=0;
   if(g('mc-saetze'))g('mc-saetze').value=20;
+  if(g('mc-neat'))g('mc-neat').value='mid';
   if(g('mc-kcal-adjust'))g('mc-kcal-adjust').value=0;
   if(localStorage.getItem('ironlog_macro_save'))saveMacroInputs();
   calcMacros();
