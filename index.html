@@ -318,6 +318,13 @@
     .macro-result-val.accent4{color:var(--accent4);}
     .macro-highlight-deficit{background:rgba(71,200,255,.06);border-radius:8px;padding:10px 8px !important;margin:2px -8px;}
     .macro-highlight-maint{background:rgba(71,255,184,.06);border-radius:8px;padding:10px 8px !important;margin:2px -8px;}
+    .macro-week-head,.macro-week-row{display:grid;grid-template-columns:38px 1fr 78px 78px 82px;gap:6px;align-items:center;}
+    .macro-week-head{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:2px 0 8px;}
+    .macro-week-row{padding:7px 0;border-bottom:1px solid var(--border);}
+    .macro-week-row:last-child{border-bottom:none;}
+    .macro-week-day{font-size:12px;font-weight:800;color:var(--accent3);}
+    .macro-week-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:700;padding:8px 7px;text-align:right;outline:none;font-family:'DM Sans',sans-serif;}
+    .macro-week-kcal{text-align:right;font-size:12px;font-weight:800;color:var(--accent);}
     .fab-blue{background:var(--accent3);color:#0a0a0f;box-shadow:0 4px 20px rgba(71,200,255,.4);}
     .fab-teal{background:var(--accent4);color:#0a0a0f;box-shadow:0 4px 20px rgba(71,255,184,.4);}
     .fab-red{background:var(--accent2);color:#fff;box-shadow:0 4px 20px rgba(255,71,87,.4);}
@@ -587,6 +594,9 @@
       .aw-actions{justify-content:stretch;}
       .aw-actions .btn{flex:1;}
       .fab{width:58px;height:58px;}
+      .macro-week-head,.macro-week-row{grid-template-columns:32px 1fr 58px 58px 66px;gap:4px;}
+      .macro-week-input{font-size:11px;padding:7px 5px;}
+      .macro-week-kcal{font-size:11px;}
     }
     @media(prefers-reduced-motion:reduce){
       *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important;}
@@ -662,7 +672,7 @@
     <button class="tab" data-tab="plans" onclick="showTab('plans',this)">📌 PLÄNE</button>
     <button class="tab" data-tab="stats" onclick="showTab('stats',this)">📊 STATS</button>
     <button class="tab" data-tab="weight" onclick="showTab('weight',this)">⚖️ GEWICHT</button>
-    <button class="tab" data-tab="macros" onclick="showTab('macros',this)">🥗 KAL & MAKROS</button>
+    <button class="tab" data-tab="macros" onclick="showTab('macros',this)">🔥 KALORIEN</button>
     <button class="tab" id="bp-tab" data-tab="bp" onclick="showTab('bp',this)">❤️ BLUTDRUCK</button>
     <button class="tab" id="sleep-tab" data-tab="sleep" onclick="showTab('sleep',this)">😴 SCHLAF</button>
     <button class="tab" id="habits-tab" data-tab="habits" onclick="showTab('habits',this)">✅ HABITS</button>
@@ -955,13 +965,12 @@
       <div id="mood-groups"></div>
     </div>
 
-    <!-- MAKROS -->
+    <!-- KALORIENRECHNER -->
     <div id="view-macros" class="view">
 
-      <!-- SECTION 1: EINGABEN -->
       <div class="chart-wrap" style="margin-bottom:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="chart-title" style="margin-bottom:0;">DEINE DATEN</div>
+          <div class="chart-title" style="margin-bottom:0;">KALORIENRECHNER</div>
           <div style="display:flex;gap:6px;align-items:center;">
             <button id="macro-save-btn" onclick="toggleMacroSave()" class="btn btn-ghost btn-sm" style="font-size:11px;">💾 Speichern: AUS</button>
             <button onclick="resetMacroInputs()" class="btn btn-ghost btn-sm" style="font-size:11px;">↺ Reset</button>
@@ -969,163 +978,95 @@
         </div>
 
         <div class="macro-row">
-          <label class="macro-label">Geschlecht</label>
-          <div style="display:flex;gap:8px;">
-            <button class="macro-toggle active" id="mg-m" onclick="setMacroGender('m')">♂ Männlich</button>
-            <button class="macro-toggle female" id="mg-f" onclick="setMacroGender('f')">♀ Weiblich</button>
-          </div>
+          <label class="macro-label">Gewicht</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-gewicht" min="30" max="300" step="0.1" value="90" oninput="calcMacros()"><span class="macro-unit">kg</span></div>
         </div>
-
-        <div class="macro-row">
-          <label class="macro-label">Alter</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-alter" min="10" max="100" placeholder="29" oninput="calcMacros()"><span class="macro-unit">Jahre</span></div>
-        </div>
-
         <div class="macro-row">
           <label class="macro-label">Größe</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-groesse" min="100" max="250" placeholder="180" oninput="calcMacros()"><span class="macro-unit">cm</span></div>
-        </div>
-
-        <div class="macro-row">
-          <label class="macro-label">Gewicht</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-gewicht" min="30" max="300" step="0.1" placeholder="80" oninput="calcMacros()"><span class="macro-unit">kg</span></div>
-        </div>
-
-        <div class="macro-row">
-          <label class="macro-label">Wunschgewicht</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-wunsch" min="30" max="300" step="0.1" placeholder="75" oninput="calcMacros()"><span class="macro-unit">kg</span></div>
-        </div>
-
-        <div class="macro-row">
-          <label class="macro-label">Ø Schritte/Tag</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steps" min="0" max="50000" step="500" placeholder="8000" oninput="calcMacros()"><span class="macro-unit">Schritte</span></div>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-groesse" min="1.2" max="2.3" step="0.01" value="1.84" oninput="calcMacros()" onchange="normalizeMacroHeightInput();calcMacros()"><span class="macro-unit">m</span></div>
         </div>
         <div class="macro-row">
-          <label class="macro-label">Trainings/Woche</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-trainings" min="0" max="14" placeholder="3" oninput="calcMacros()"><span class="macro-unit">×</span></div>
+          <label class="macro-label">Schritte</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steps" min="0" max="50000" step="500" value="10000" oninput="calcMacros()"><span class="macro-unit">/ Tag</span></div>
         </div>
         <div class="macro-row">
-          <label class="macro-label">Trainingsdauer</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-trainingmin" min="0" max="300" step="5" placeholder="60" oninput="calcMacros()"><span class="macro-unit">Min</span></div>
+          <label class="macro-label">Steigung</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steigung" min="0" max="30" step="0.5" value="0" oninput="calcMacros()"><span class="macro-unit">%</span></div>
         </div>
         <div class="macro-row">
-          <label class="macro-label">Aktivitätslevel</label>
-          <div id="mc-pal-label" style="font-size:13px;font-weight:700;color:var(--accent3);">—</div>
+          <label class="macro-label">Arbeitssätze</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-saetze" min="0" max="100" step="1" value="20" oninput="calcMacros()"><span class="macro-unit">/ Tag</span></div>
         </div>
-
         <div class="macro-row">
-          <label class="macro-label">Proteinanteil</label>
-          <div style="display:flex;gap:6px;">
-            <button class="macro-toggle3 active" id="mp-low" onclick="setMacro3('protein','low')">Niedrig</button>
-            <button class="macro-toggle3" id="mp-mid" onclick="setMacro3('protein','mid')">Moderat</button>
-            <button class="macro-toggle3" id="mp-high" onclick="setMacro3('protein','high')">Hoch</button>
-          </div>
+          <label class="macro-label">Kalorienziel</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-kcal-input" min="0" max="8000" step="50" placeholder="optional" oninput="calcMacros()"><span class="macro-unit">kcal/Tag</span></div>
         </div>
-
         <div class="macro-row">
-          <label class="macro-label">Pflanzl. Protein</label>
-          <div style="display:flex;gap:6px;">
-            <button class="macro-toggle3 active" id="mpp-low" onclick="setMacro3('vprotein','low')">Niedrig</button>
-            <button class="macro-toggle3" id="mpp-mid" onclick="setMacro3('vprotein','mid')">Moderat</button>
-            <button class="macro-toggle3" id="mpp-high" onclick="setMacro3('vprotein','high')">Hoch</button>
-          </div>
-        </div>
-
-        <div class="macro-row">
-          <label class="macro-label">Fettanteil</label>
-          <div style="display:flex;gap:6px;">
-            <button class="macro-toggle3" id="mf-low" onclick="setMacro3('fat','low')">Niedrig</button>
-            <button class="macro-toggle3 active" id="mf-mid" onclick="setMacro3('fat','mid')">Moderat</button>
-            <button class="macro-toggle3" id="mf-high" onclick="setMacro3('fat','high')">Hoch</button>
-          </div>
+          <label class="macro-label">Anpassung</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-kcal-adjust" min="-2000" max="2000" step="50" placeholder="-300 / +200" oninput="calcMacros()"><span class="macro-unit">kcal/Tag</span></div>
         </div>
       </div>
 
-      <!-- SECTION 1.1: KALORIENBEREICH -->
-      <div class="chart-wrap" style="margin-bottom:12px;" id="macro-results-kcal" style="display:none;">
-        <div class="chart-title" style="margin-bottom:14px;">1.1 KALORIENBEREICH</div>
+      <div class="chart-wrap" style="margin-bottom:12px;">
+        <div class="chart-title" style="margin-bottom:14px;">TAGESWERT</div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Grundbedarf</span>
-          <span class="macro-result-val" id="mr-grundbedarf">—</span>
+          <span class="macro-result-label">Ruheumsatz</span>
+          <span class="macro-result-val" id="mr-ruhe">—</span>
         </div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Kritischer Bereich</span>
-          <span class="macro-result-val" id="mr-kritisch">—</span>
+          <span class="macro-result-label">Kalorien durch Schritte</span>
+          <span class="macro-result-val accent3" id="mr-schritte">—</span>
         </div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Kaloriendefizit</span>
-          <span class="macro-result-val accent3" id="mr-defizit">—</span>
+          <span class="macro-result-label">Kalorien durch Krafttraining</span>
+          <span class="macro-result-val accent4" id="mr-training">—</span>
         </div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Theoret. Erhaltung</span>
-          <span class="macro-result-val" id="mr-erhaltung-t">—</span>
+          <span class="macro-result-label">Zwischensumme ohne TEF</span>
+          <span class="macro-result-val" id="mr-zwischen">—</span>
         </div>
-        <div class="macro-result-row">
-          <span class="macro-result-label">Prakt. Erhaltung</span>
-          <span class="macro-result-val accent4" id="mr-erhaltung-p">—</span>
+        <div class="macro-result-row macro-highlight-maint">
+          <span class="macro-result-label">Erhaltung inkl. TEF</span>
+          <span class="macro-result-val accent" id="mr-erhaltung">—</span>
         </div>
+        <div id="mr-day-note" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
       </div>
 
-      <!-- SECTION 1.2: MAKRONÄHRSTOFFE -->
-      <div class="chart-wrap" style="margin-bottom:12px;" id="macro-results-makros">
-        <div class="chart-title" style="margin-bottom:14px;">1.2 MAKRONÄHRSTOFFE</div>
-        <div class="macro-result-row">
-          <span class="macro-result-label">🍗 Proteine</span>
-          <span class="macro-result-val accent" id="mr-protein">—</span>
+      <div class="chart-wrap" style="margin-bottom:12px;">
+        <div class="chart-title" style="margin-bottom:14px;">WOCHENLOGIK</div>
+        <div class="macro-week-head">
+          <div>Tag</div><div>Schritte</div><div>Steig.</div><div>Sätze</div><div style="text-align:right;">kcal</div>
         </div>
-        <div style="background:var(--surface);border-radius:8px;height:6px;margin:-6px 0 10px;overflow:hidden;">
-          <div id="mr-protein-bar" style="height:100%;background:var(--accent);border-radius:8px;width:0%;transition:width .4s;"></div>
-        </div>
-        <div class="macro-result-row">
-          <span class="macro-result-label">🥑 Fette</span>
-          <span class="macro-result-val accent3" id="mr-fett">—</span>
-        </div>
-        <div style="background:var(--surface);border-radius:8px;height:6px;margin:-6px 0 10px;overflow:hidden;">
-          <div id="mr-fett-bar" style="height:100%;background:var(--accent3);border-radius:8px;width:0%;transition:width .4s;"></div>
-        </div>
-        <div class="macro-result-row">
-          <span class="macro-result-label">🍞 Kohlenhydrate</span>
-          <span class="macro-result-val accent4" id="mr-kh">—</span>
-        </div>
-        <div style="background:var(--surface);border-radius:8px;height:6px;margin:-6px 0 10px;overflow:hidden;">
-          <div id="mr-kh-bar" style="height:100%;background:var(--accent4);border-radius:8px;width:0%;transition:width .4s;"></div>
-        </div>
-        <div id="mr-macro-note" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
+        <div id="macro-week-rows"></div>
       </div>
 
-      <!-- SECTION 2: KÖRPERFETTZUNAHME -->
-      <div class="chart-wrap" style="margin-bottom:12px;" id="macro-results-kfz">
-        <div class="chart-title" style="margin-bottom:14px;">2.1 AB WANN NEHME ICH KÖRPERFETT ZU?</div>
+      <div class="chart-wrap">
+        <div class="chart-title" style="margin-bottom:14px;">WOCHENSCHNITT</div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Zunahme nicht möglich</span>
-          <span class="macro-result-val accent3" id="mr-kf1">—</span>
+          <span class="macro-result-label">Wöchentlicher Gesamtverbrauch</span>
+          <span class="macro-result-val" id="mr-week-total">—</span>
         </div>
-        <div class="macro-result-row">
-          <span class="macro-result-label">Zunahme unwahrscheinlich</span>
-          <span class="macro-result-val" id="mr-kf2">—</span>
-        </div>
-        <div class="macro-result-row">
-          <span class="macro-result-label">Zunahme möglich</span>
-          <span class="macro-result-val accent" id="mr-kf3">—</span>
+        <div class="macro-result-row macro-highlight-maint">
+          <span class="macro-result-label">Ø Tagesverbrauch</span>
+          <span class="macro-result-val accent" id="mr-week-avg">—</span>
         </div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Zunahme wahrscheinlich</span>
-          <span class="macro-result-val accent2" id="mr-kf4">—</span>
-        </div>
-      </div>
-
-      <!-- SECTION 2.2: TAGE BIS ZUNAHME -->
-      <div class="chart-wrap" id="macro-results-tage">
-        <div class="chart-title" style="margin-bottom:14px;">2.2 TAGE BIS KÖRPERFETTZUNAHME</div>
-        <div class="macro-row" style="margin-bottom:12px;">
-          <label class="macro-label">Kalorienanzahl</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-kcal-input" min="500" max="8000" placeholder="3500" oninput="calcKfTage()"><span class="macro-unit">kcal</span></div>
+          <span class="macro-result-label">Erhalt</span>
+          <span class="macro-result-val accent4" id="mr-week-rec">—</span>
         </div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Anzahl der Tage</span>
-          <span class="macro-result-val accent3" id="mr-tage">—</span>
+          <span class="macro-result-label">Erhöhung/Reduzierung</span>
+          <span class="macro-result-val" id="mr-week-adjust">—</span>
         </div>
-        <div id="mr-tage-note" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
+        <div class="macro-result-row macro-highlight-maint">
+          <span class="macro-result-label">Kalorienziel aus Anpassung</span>
+          <span class="macro-result-val accent" id="mr-week-adjusted-target">—</span>
+        </div>
+        <div class="macro-result-row">
+          <span class="macro-result-label">Bewertung Kalorienziel</span>
+          <span class="macro-result-val" id="mr-week-target">—</span>
+        </div>
+        <div id="mr-week-note" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
       </div>
 
     </div>
@@ -1770,7 +1711,7 @@ const TAB_SETTINGS_BASE=[
   {id:'sleep',   emoji:'😴', label:'Schlaf',   default:true},
   {id:'habits',  emoji:'✅', label:'Habits',   default:true},
   {id:'mood',    emoji:'😊', label:'Stimmung', default:true},
-  {id:'macros',  emoji:'🥗', label:'Kal & Makros', default:true},
+  {id:'macros',  emoji:'🔥', label:'Kalorien', default:true},
 ];
 
 function getTabOrder(){
@@ -4762,268 +4703,182 @@ function loadTheme(){
   }
 }
 
-// ── KALORIEN & MAKRO RECHNER ──
+// ── KALORIENRECHNER ──
 // ═══════════════════════════════════════════════════════════
-let _macroGender = 'm';
-let _macroProtein = 'low';
-let _macroVProtein = 'low';
-let _macroFat = 'mid';
+const MACRO_WEEK_DAYS=[
+  {key:'mo',label:'Mo'},{key:'di',label:'Di'},{key:'mi',label:'Mi'},{key:'do',label:'Do'},
+  {key:'fr',label:'Fr'},{key:'sa',label:'Sa'},{key:'so',label:'So'}
+];
 
-function setMacroGender(gender) {
-  _macroGender = gender;
-  g('mg-m').classList.toggle('active', gender === 'm');
-  g('mg-f').classList.toggle('active', gender === 'f');
-  // Female stays pink, male stays blue
-  g('mg-m').classList.remove('female');
-  g('mg-f').classList.add('female');
-  calcMacros();
+function macroNum(id, fallback=0){
+  const el=g(id);
+  const v=parseFloat(String(el?.value||'').replace(',','.'));
+  return Number.isFinite(v)?v:fallback;
+}
+function macroHeightMeters(v){
+  const n=parseFloat(String(v||'').replace(',','.'));
+  if(!Number.isFinite(n))return 1.84;
+  return n>3?n/100:n;
+}
+function normalizeMacroHeightInput(){
+  const el=g('mc-groesse'); if(!el)return;
+  el.value=macroHeightMeters(el.value).toFixed(2);
+}
+function macroKcal(v){ return `${Math.round(v)} kcal`; }
+function macroCalcDay(weight,height,steps,incline,sets){
+  const ruhe=weight*22;
+  const stepFactor=1+(incline*0.065);
+  const schritte=(steps/1000)*weight*height*0.27*stepFactor;
+  const training=sets*weight*0.11;
+  const zwischen=ruhe+schritte+training;
+  const erhaltung=zwischen/0.90;
+  return {ruhe,schritte,training,zwischen,erhaltung};
+}
+function ensureMacroWeekRows(savedWeek=null){
+  const con=g('macro-week-rows'); if(!con)return;
+  if(con.children.length&&!savedWeek)return;
+  const steps=macroNum('mc-steps',10000);
+  const incline=macroNum('mc-steigung',0);
+  const sets=macroNum('mc-saetze',20);
+  con.innerHTML=MACRO_WEEK_DAYS.map((d,i)=>{
+    const row=savedWeek?.[i]||{};
+    return `<div class="macro-week-row">
+      <div class="macro-week-day">${d.label}</div>
+      <input class="macro-week-input" id="mcw-steps-${i}" type="number" min="0" max="50000" step="500" value="${htmlEscape(row.steps??steps)}" oninput="calcMacros()">
+      <input class="macro-week-input" id="mcw-incline-${i}" type="number" min="0" max="30" step="0.5" value="${htmlEscape(row.incline??incline)}" oninput="calcMacros()">
+      <input class="macro-week-input" id="mcw-sets-${i}" type="number" min="0" max="100" step="1" value="${htmlEscape(row.sets??sets)}" oninput="calcMacros()">
+      <div class="macro-week-kcal" id="mcw-kcal-${i}">—</div>
+    </div>`;
+  }).join('');
+}
+function macroWeekValues(){
+  return MACRO_WEEK_DAYS.map((_,i)=>({
+    steps: macroNum(`mcw-steps-${i}`,0),
+    incline: macroNum(`mcw-incline-${i}`,0),
+    sets: macroNum(`mcw-sets-${i}`,0)
+  }));
 }
 
-function setMacro3(type, val) {
-  if (type === 'protein')  { _macroProtein  = val; ['low','mid','high'].forEach(v => g('mp-' +v).classList.toggle('active', v===val)); }
-  if (type === 'vprotein') { _macroVProtein = val; ['low','mid','high'].forEach(v => g('mpp-'+v).classList.toggle('active', v===val)); }
-  if (type === 'fat')      { _macroFat      = val; ['low','mid','high'].forEach(v => g('mf-' +v).classList.toggle('active', v===val)); }
-  calcMacros();
+function calcMacros(){
+  ensureMacroWeekRows();
+  const weight=macroNum('mc-gewicht',90);
+  const height=macroHeightMeters(g('mc-groesse')?.value||1.84);
+  const steps=macroNum('mc-steps',10000);
+  const incline=macroNum('mc-steigung',0);
+  const sets=macroNum('mc-saetze',20);
+  const target=macroNum('mc-kcal-input',0);
+  const adjust=macroNum('mc-kcal-adjust',0);
+
+  const day=macroCalcDay(weight,height,steps,incline,sets);
+  g('mr-ruhe').textContent=macroKcal(day.ruhe);
+  g('mr-schritte').textContent=macroKcal(day.schritte);
+  g('mr-training').textContent=macroKcal(day.training);
+  g('mr-zwischen').textContent=macroKcal(day.zwischen);
+  g('mr-erhaltung').textContent=macroKcal(day.erhaltung);
+  g('mr-day-note').textContent=`Formel: (${Math.round(day.ruhe)} + ${Math.round(day.schritte)} + ${Math.round(day.training)}) / 0,90.`;
+
+  const week=macroWeekValues();
+  let weekTotal=0;
+  week.forEach((row,i)=>{
+    const r=macroCalcDay(weight,height,row.steps,row.incline,row.sets);
+    weekTotal+=r.erhaltung;
+    const out=g(`mcw-kcal-${i}`);
+    if(out)out.textContent=Math.round(r.erhaltung);
+  });
+  const weekAvg=weekTotal/7;
+  const adjustedTarget=weekAvg+adjust;
+  g('mr-week-total').textContent=macroKcal(weekTotal);
+  g('mr-week-avg').textContent=macroKcal(weekAvg);
+  g('mr-week-rec').textContent=`ca. ${Math.round(weekAvg)} kcal/Tag`;
+  g('mr-week-adjust').textContent=adjust===0?'0 kcal/Tag':`${adjust>0?'+':''}${Math.round(adjust)} kcal/Tag`;
+  g('mr-week-adjust').className='macro-result-val '+(adjust>0?'accent2':adjust<0?'accent3':'');
+  g('mr-week-adjusted-target').textContent=macroKcal(adjustedTarget);
+  if(target>0){
+    const compareBase=adjust!==0?adjustedTarget:weekAvg;
+    const diff=Math.round(target-compareBase);
+    const abs=Math.abs(diff);
+    const baseLabel=adjust!==0?'Ziel':'Erhalt';
+    const txt=abs<=50?`nahe ${baseLabel}`:diff>0?`+${diff} kcal/Tag über ${baseLabel}`:`${diff} kcal/Tag unter ${baseLabel}`;
+    g('mr-week-target').textContent=txt;
+    g('mr-week-target').className='macro-result-val '+(abs<=50?'accent4':diff>0?'accent2':'accent3');
+  }else{
+    g('mr-week-target').textContent='—';
+    g('mr-week-target').className='macro-result-val';
+  }
+  g('mr-week-note').textContent='Hauptempfehlung ist der Wochenschnitt. Trainingstage und Ruhetage dürfen unterschiedlich sein, entscheidend ist der Durchschnitt.';
+  if(localStorage.getItem('ironlog_macro_save'))saveMacroInputs();
 }
 
-function calcMacros() {
-  // Auto-save if enabled
-  if(localStorage.getItem('ironlog_macro_save')) saveMacroInputs();
-  const alter   = parseFloat(g('mc-alter')?.value);
-  const groesse = parseFloat(g('mc-groesse')?.value);
-  const gewicht = parseFloat(g('mc-gewicht')?.value);
-  const wunsch  = parseFloat(g('mc-wunsch')?.value);
-  // Compute PAL from steps + training
-  const steps    = parseFloat(g('mc-steps')?.value) || 8000;
-  const trainings= parseFloat(g('mc-trainings')?.value) || 0;
-  const trainMin = parseFloat(g('mc-trainingmin')?.value) || 60;
-
-  // Step contribution: ~0.045 kcal/kg/step – mapped to PAL addition
-  // Base sedentary PAL = 1.2; each 1000 steps adds ~0.04 PAL
-  const stepPAL = Math.min(steps / 1000 * 0.04, 0.60); // max +0.60 from steps
-
-  // Training contribution: MET ~6 for moderate lifting, 60min session
-  // Extra kcal/day = trainings/week * duration_min * MET * weight / 60 / 7
-  // We convert that to PAL addition over the week
-  // PAL_training_add = (trainings * trainMin * 6) / (7 * 1440) * ~1.2 normalization
-  const trainingPAL = Math.min((trainings * trainMin * 6) / (7 * 1440) * 1.2, 0.60);
-
-  const akt = Math.min(Math.max(1.2 + stepPAL + trainingPAL, 1.2), 2.2);
-  // Show PAL label
-  const palLabel = akt < 1.25 ? 'Krank / Bettruhe'
-    : akt < 1.35 ? 'Wenig Aktivität'
-    : akt < 1.55 ? 'Normale Aktivität'
-    : akt < 1.75 ? 'Erhöhte Aktivität'
-    : akt < 1.95 ? 'Sehr hohe Aktivität'
-    : 'Höchste Aktivität / Leistungssport';
-  if(g('mc-pal-label')) g('mc-pal-label').textContent = palLabel + ` (PAL ${akt.toFixed(2)})`;
-
-  if (!alter || !groesse || !gewicht) return;
-
-  // ── 1. Grundbedarf (Harris-Benedict) ──
-  let bmr;
-  if (_macroGender === 'm') {
-    bmr = 88.362 + (13.397 * gewicht) + (4.799 * groesse) - (5.677 * alter);
-  } else {
-    bmr = 447.593 + (9.247 * gewicht) + (3.098 * groesse) - (4.330 * alter);
-  }
-  bmr = Math.round(bmr);
-
-  // ── 2. Kalorienbereich ──
-  const kritisch   = bmr + 200;
-  const erhaltungT = Math.round(bmr * akt);
-  const defizitLow = kritisch + 100;
-  const defizitHigh = erhaltungT - 200;
-  const erhaltungPLow  = Math.round(erhaltungT * 0.96);
-  const erhaltungPHigh = Math.round(erhaltungT * 1.19);
-
-  g('mr-grundbedarf').textContent  = bmr + ' kcal';
-  g('mr-kritisch').textContent     = kritisch + ' kcal';
-  g('mr-defizit').textContent      = defizitLow + ' – ' + defizitHigh + ' kcal';
-  g('mr-erhaltung-t').textContent  = erhaltungT + ' kcal';
-  g('mr-erhaltung-p').textContent  = erhaltungPLow + ' – ' + erhaltungPHigh + ' kcal';
-
-  // ── 3. Makros ──
-  // Protein g/kg Körpergewicht
-  const proteinFactors = {
-    low:  [1.27, 1.70],
-    mid:  [1.33, 1.76],
-    high: [1.39, 1.81]
-  };
-  const vProteinBonus = { low: 0, mid: 0.15, high: 0.30 };
-
-  let [pLow, pHigh] = proteinFactors[_macroProtein];
-  pLow  += vProteinBonus[_macroVProtein];
-  pHigh += vProteinBonus[_macroVProtein];
-
-  const proteinLow  = Math.round(gewicht * pLow);
-  const proteinHigh = Math.round(gewicht * pHigh);
-
-  // Fett g/kg
-  const fatFactors = {
-    low:  [0.70, 0.90],
-    mid:  [0.86, 1.21],
-    high: [1.26, 1.54]
-  };
-  const [fLow, fHigh] = fatFactors[_macroFat];
-  const fettLow  = Math.round(gewicht * fLow);
-  const fettHigh = Math.round(gewicht * fHigh);
-
-  // KH = Rest (basierend auf Erhaltungsbereich)
-  const kcalBase = (erhaltungPLow + erhaltungPHigh) / 2;
-  const kcalFromProteinMid = ((proteinLow + proteinHigh) / 2) * 4;
-  const kcalFromFatMid     = ((fettLow + fettHigh) / 2) * 9;
-  const kcalForKH = kcalBase - kcalFromProteinMid - kcalFromFatMid;
-
-  // KH range ±7g around midpoint
-  const khMid  = Math.round(kcalForKH / 4);
-  const khLow  = Math.max(0, khMid - 7);
-  const khHigh = khMid + 7;
-
-  g('mr-protein').textContent = proteinLow + ' – ' + proteinHigh + ' g';
-  g('mr-fett').textContent    = fettLow    + ' – ' + fettHigh    + ' g';
-  g('mr-kh').textContent      = khLow      + ' – ' + khHigh      + ' g';
-
-  // Progress bars (relative to max reasonable)
-  const maxP = gewicht * 2.5;
-  const maxF = gewicht * 2.0;
-  const maxK = 800;
-  g('mr-protein-bar').style.width = Math.min(100, (proteinHigh / maxP) * 100) + '%';
-  g('mr-fett-bar').style.width    = Math.min(100, (fettHigh    / maxF) * 100) + '%';
-  g('mr-kh-bar').style.width      = Math.min(100, (khHigh      / maxK) * 100) + '%';
-
-  // Macro kcal note
-  const totalKcal = Math.round(proteinHigh*4 + fettHigh*9 + khHigh*4);
-  g('mr-macro-note').textContent = `Entspricht ca. ${totalKcal} kcal bei Max-Werten`;
-
-  // ── 4. Körperfettzunahme ──
-  g('mr-kf1').textContent = defizitLow + ' – ' + defizitHigh + ' kcal';
-  g('mr-kf2').textContent = erhaltungT + ' kcal';
-  g('mr-kf3').textContent = Math.round(erhaltungT * 1.15) + ' kcal';
-  g('mr-kf4').textContent = Math.round(erhaltungT * 1.25) + ' kcal';
-
-  // Store for 2.2
-  window._macroErhaltungT = erhaltungT;
-  window._macroErhaltungPLow = erhaltungPLow;
-  window._macroErhaltungPHigh = erhaltungPHigh;
-  calcKfTage();
-}
-
-function calcKfTage() {
-  const kcalInput = parseFloat(g('mc-kcal-input')?.value);
-  const erhT  = window._macroErhaltungT;
-  const erhPL = window._macroErhaltungPLow;
-  const erhPH = window._macroErhaltungPHigh;
-
-  if (!kcalInput || !erhT) {
-    g('mr-tage').textContent = '—';
-    g('mr-tage-note').textContent = '';
-    return;
-  }
-
-  // Use practical maintenance range for calculation
-  // 1kg Fett = 7700 kcal
-  const ueberschussLow  = Math.max(0, kcalInput - erhPH);
-  const ueberschussHigh = Math.max(0, kcalInput - erhPL);
-
-  if (ueberschussLow <= 0 && ueberschussHigh <= 0) {
-    g('mr-tage').textContent = '—';
-    g('mr-tage-note').textContent = 'Kein Kalorienüberschuss – Fettzunahme unwahrscheinlich.';
-    return;
-  }
-
-  const tageLow  = ueberschussHigh > 0 ? Math.round(7700 / ueberschussHigh) : null;
-  const tageHigh = ueberschussLow  > 0 ? Math.round(7700 / ueberschussLow)  : null;
-
-  if (tageLow && tageHigh) {
-    g('mr-tage').textContent = tageLow + ' – ' + tageHigh + ' Tage';
-  } else if (tageHigh) {
-    g('mr-tage').textContent = tageHigh + ' Tage';
-  } else {
-    g('mr-tage').textContent = tageLow + ' Tage';
-  }
-  g('mr-tage-note').textContent = 'Tage bis ca. 1 kg Körperfettzunahme bei dieser Kalorienmenge.';
-}
-
-// Pre-fill macros from current weight entry if available
-function prefillMacrosFromData() {
-  // Load saved macro state if enabled
-  const saved = localStorage.getItem('ironlog_macro_save');
-  if(saved) {
-    try {
-      const d = JSON.parse(saved);
-      if(g('mc-alter'))       g('mc-alter').value       = d.alter||'';
-      if(g('mc-groesse'))     g('mc-groesse').value     = d.groesse||'';
-      if(g('mc-gewicht'))     g('mc-gewicht').value     = d.gewicht||'';
-      if(g('mc-wunsch'))      g('mc-wunsch').value      = d.wunsch||'';
-      if(g('mc-steps'))       g('mc-steps').value       = d.steps||'';
-      if(g('mc-trainings'))   g('mc-trainings').value   = d.trainings||'';
-      if(g('mc-trainingmin')) g('mc-trainingmin').value = d.trainingmin||'';
-      if(d.gender) { _macroGender=d.gender; g('mg-m').classList.toggle('active',d.gender==='m'); g('mg-f').classList.toggle('active',d.gender==='f'); g('mg-f').classList.toggle('female',true); if(d.gender==='f') g('mg-f').classList.add('active'); }
-      if(d.protein) setMacro3('protein',d.protein);
-      if(d.vprotein) setMacro3('vprotein',d.vprotein);
-      if(d.fat) setMacro3('fat',d.fat);
+function prefillMacrosFromData(){
+  const saved=localStorage.getItem('ironlog_macro_save');
+  if(saved){
+    try{
+      const d=JSON.parse(saved);
+      if(g('mc-gewicht'))g('mc-gewicht').value=d.gewicht||90;
+      if(g('mc-groesse'))g('mc-groesse').value=macroHeightMeters(d.groesse||1.84).toFixed(2);
+      if(g('mc-steps'))g('mc-steps').value=d.steps||10000;
+      if(g('mc-steigung'))g('mc-steigung').value=d.steigung??0;
+      if(g('mc-saetze'))g('mc-saetze').value=d.saetze??20;
+      if(g('mc-kcal-input'))g('mc-kcal-input').value=d.kcalInput||'';
+      if(g('mc-kcal-adjust'))g('mc-kcal-adjust').value=d.kcalAdjust||'';
+      ensureMacroWeekRows(Array.isArray(d.week)?d.week:[]);
       updateMacroSaveBtn(true);
-      return; // saved data loaded, skip weight prefill
-    } catch(e){}
+      return;
+    }catch(e){}
   }
-  // Fallback: prefill weight from latest entry
-  if (weightEntries.length) {
-    const latest = [...weightEntries].sort((a,b) => b.date.localeCompare(a.date))[0];
-    if (latest?.weight && !g('mc-gewicht')?.value) {
-      const el = g('mc-gewicht');
-      if (el) el.value = latest.weight;
-    }
+  if(weightEntries.length){
+    const latest=[...weightEntries].sort((a,b)=>b.date.localeCompare(a.date))[0];
+    if(latest?.weight&&g('mc-gewicht'))g('mc-gewicht').value=latest.weight;
   }
+  ensureMacroWeekRows();
   updateMacroSaveBtn(false);
 }
 
 function updateMacroSaveBtn(active){
-  const btn = g('macro-save-btn'); if(!btn) return;
-  btn.textContent = active ? '💾 Speichern: AN' : '💾 Speichern: AUS';
-  btn.style.color = active ? 'var(--accent4)' : '';
-  btn.style.borderColor = active ? 'var(--accent4)' : '';
+  const btn=g('macro-save-btn'); if(!btn)return;
+  btn.textContent=active?'💾 Speichern: AN':'💾 Speichern: AUS';
+  btn.style.color=active?'var(--accent4)':'';
+  btn.style.borderColor=active?'var(--accent4)':'';
 }
 
 function toggleMacroSave(){
-  const active = !!localStorage.getItem('ironlog_macro_save');
+  const active=!!localStorage.getItem('ironlog_macro_save');
   if(active){
     localStorage.removeItem('ironlog_macro_save');
     updateMacroSaveBtn(false);
-    showToast('Speichern deaktiviert – Daten werden nicht mehr gespeichert.');
-  } else {
+    showToast('Speichern deaktiviert.');
+  }else{
     saveMacroInputs();
-    showToast('Speichern aktiviert – Daten werden beim nächsten Öffnen geladen.');
+    showToast('Speichern aktiviert.');
   }
 }
 
 function saveMacroInputs(){
-  const d = {
-    alter:       g('mc-alter')?.value||'',
-    groesse:     g('mc-groesse')?.value||'',
-    gewicht:     g('mc-gewicht')?.value||'',
-    wunsch:      g('mc-wunsch')?.value||'',
-    steps:       g('mc-steps')?.value||'',
-    trainings:   g('mc-trainings')?.value||'',
-    trainingmin: g('mc-trainingmin')?.value||'',
-    gender:  _macroGender,
-    protein: _macroProtein,
-    vprotein: _macroVProtein,
-    fat: _macroFat
+  const d={
+    gewicht:g('mc-gewicht')?.value||90,
+    groesse:g('mc-groesse')?.value||1.84,
+    steps:g('mc-steps')?.value||10000,
+    steigung:g('mc-steigung')?.value||0,
+    saetze:g('mc-saetze')?.value||20,
+    kcalInput:g('mc-kcal-input')?.value||'',
+    kcalAdjust:g('mc-kcal-adjust')?.value||'',
+    week:macroWeekValues()
   };
-  localStorage.setItem('ironlog_macro_save', JSON.stringify(d));
+  localStorage.setItem('ironlog_macro_save',JSON.stringify(d));
   updateMacroSaveBtn(true);
 }
 
 function resetMacroInputs(){
-  ['mc-alter','mc-groesse','mc-gewicht','mc-wunsch','mc-steps','mc-trainings','mc-trainingmin'].forEach(id=>{
-    const el=g(id); if(el) el.value='';
-  });
-  _macroGender='m'; _macroProtein='low'; _macroVProtein='low'; _macroFat='mid';
-  g('mg-m').classList.add('active'); g('mg-f').classList.remove('active');
-  setMacro3('protein','low'); setMacro3('vprotein','low'); setMacro3('fat','mid');
-  // If save is on, update saved data
-  if(localStorage.getItem('ironlog_macro_save')) saveMacroInputs();
+  if(g('mc-gewicht'))g('mc-gewicht').value=90;
+  if(g('mc-groesse'))g('mc-groesse').value='1.84';
+  if(g('mc-steps'))g('mc-steps').value=10000;
+  if(g('mc-steigung'))g('mc-steigung').value=0;
+  if(g('mc-saetze'))g('mc-saetze').value=20;
+  if(g('mc-kcal-input'))g('mc-kcal-input').value='';
+  if(g('mc-kcal-adjust'))g('mc-kcal-adjust').value='';
+  const con=g('macro-week-rows'); if(con)con.innerHTML='';
+  ensureMacroWeekRows();
+  if(localStorage.getItem('ironlog_macro_save'))saveMacroInputs();
   calcMacros();
   showToast('Kalorienrechner zurückgesetzt.');
 }
