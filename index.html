@@ -3554,32 +3554,32 @@ function renderKorrelationChart(){
   });
   const sMap=getDailyStepMap(filterByTime(stepEntries, wTimeFilter));
   const dates=[...new Set([...Object.keys(wMap),...Object.keys(kMap),...Object.keys(sMap)])].sort();
-  const chartPairs=dates.filter(d=>wMap[d]!==undefined).map(d=>({
+  const chartPairs=dates.map(d=>({
     date:d,
-    w:wMap[d],
+    w:wMap[d]!==undefined?wMap[d]:null,
     k:kMap[d]!==undefined?kMap[d]:null,
     s:sMap[d]!==undefined?sMap[d]:null
-  })).filter(p=>p.k!==null||p.s!==null);
+  })).filter(p=>p.w!==null||p.k!==null||p.s!==null);
 
-  const minPairs = wTimeFilter==='14d' ? 3 : 5;
-  if(chartPairs.length<minPairs){
-    fresh.parentNode.innerHTML='<div style="text-align:center;padding:28px 10px;color:var(--muted);font-size:13px;">Zu wenig gemeinsame Daten für Korrelation.</div><canvas id="korrelationChart" height="220" style="display:none;"></canvas>';
+  const hasK=chartPairs.some(p=>p.k!==null);
+  const hasS=chartPairs.some(p=>p.s!==null);
+  if(!hasK&&!hasS){
+    fresh.parentNode.innerHTML='<div style="text-align:center;padding:28px 10px;color:var(--muted);font-size:13px;">Noch keine Kalorien- oder Schritt-Daten für die Korrelation.</div><canvas id="korrelationChart" height="220" style="display:none;"></canvas>';
     return;
   }
 
   const wVals=chartPairs.map(p=>p.w);
-  const wSmooth=calcMA(wVals,7);
   const kRaw=chartPairs.map(p=>p.k);
-  const kSmooth=calcMA(kRaw,7);
   const sRaw=chartPairs.map(p=>p.s);
-  const sSmooth=calcMA(sRaw,7);
-  const hasK=kRaw.some(v=>v!==null);
-  const hasS=sRaw.some(v=>v!==null);
+  const enoughForTrend=arr=>arr.filter(v=>v!==null).length>=3;
+  const wData=enoughForTrend(wVals)?calcMA(wVals,7):wVals;
+  const kData=enoughForTrend(kRaw)?calcMA(kRaw,7):kRaw;
+  const sData=enoughForTrend(sRaw)?calcMA(sRaw,7):sRaw;
   const datasets=[
-    {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:3,yAxisID:'yW',spanGaps:true}
+    {label:enoughForTrend(wVals)?'Ø Gewicht':'Gewicht',data:wData,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:enoughForTrend(wVals)?0:3,tension:.4,fill:false,order:3,yAxisID:'yW',spanGaps:true}
   ];
-  if(hasK) datasets.push({label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yK',spanGaps:true});
-  if(hasS) datasets.push({label:'Ø Schritte',data:sSmooth,borderColor:'#47ffb8',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yS',spanGaps:true});
+  if(hasK) datasets.push({label:enoughForTrend(kRaw)?'Ø Kalorien':'Kalorien',data:kData,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:enoughForTrend(kRaw)?0:3,tension:.4,fill:false,order:2,yAxisID:'yK',spanGaps:true});
+  if(hasS) datasets.push({label:enoughForTrend(sRaw)?'Ø Schritte':'Schritte',data:sData,borderColor:'#47ffb8',borderWidth:2.5,pointRadius:enoughForTrend(sRaw)?0:4,pointBackgroundColor:'#47ffb8',tension:.4,fill:false,order:1,yAxisID:'yS',spanGaps:true});
   if(showWeightRaw) datasets.push({label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:4,yAxisID:'yW'});
 
   korrelationChartI=new Chart(fresh,{
@@ -3594,7 +3594,7 @@ function renderKorrelationChart(){
         x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
         yW:{position:'left',ticks:{color:'#47c8ff',font:{size:10}},grid:{color:'#2a2a38'},title:{display:true,text:'kg',color:'#47c8ff',font:{size:10}}},
         yK:{position:'right',display:hasK,ticks:{color:'#ff9f47',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'kcal',color:'#ff9f47',font:{size:10}}},
-        yS:{position:'right',display:hasS&&!hasK,ticks:{color:'#47ffb8',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'Schritte',color:'#47ffb8',font:{size:10}}}
+        yS:{position:'right',display:hasS,offset:true,ticks:{color:'#47ffb8',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'Schritte',color:'#47ffb8',font:{size:10}}}
       }
     }
   });
