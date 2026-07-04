@@ -3571,7 +3571,7 @@ function renderKorrelationChart(){
   const wVals=chartPairs.map(p=>p.w);
   const kRaw=chartPairs.map(p=>p.k);
   const sRaw=chartPairs.map(p=>p.s);
-  const enoughForTrend=arr=>arr.filter(v=>v!==null).length>=3;
+  const enoughForTrend=arr=>arr.filter(v=>v!==null).length>=7;
   const wData=enoughForTrend(wVals)?calcMA(wVals,7):wVals;
   const kData=enoughForTrend(kRaw)?calcMA(kRaw,7):kRaw;
   const sData=enoughForTrend(sRaw)?calcMA(sRaw,7):sRaw;
@@ -3579,7 +3579,7 @@ function renderKorrelationChart(){
     {label:enoughForTrend(wVals)?'Ø Gewicht':'Gewicht',data:wData,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:enoughForTrend(wVals)?0:3,tension:.4,fill:false,order:3,yAxisID:'yW',spanGaps:true}
   ];
   if(hasK) datasets.push({label:enoughForTrend(kRaw)?'Ø Kalorien':'Kalorien',data:kData,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:enoughForTrend(kRaw)?0:3,tension:.4,fill:false,order:2,yAxisID:'yK',spanGaps:true});
-  if(hasS) datasets.push({label:enoughForTrend(sRaw)?'Ø Schritte':'Schritte',data:sData,borderColor:'#47ffb8',borderWidth:2.5,pointRadius:enoughForTrend(sRaw)?0:4,pointBackgroundColor:'#47ffb8',tension:.4,fill:false,order:1,yAxisID:'yS',spanGaps:true});
+  if(hasS) datasets.push({label:enoughForTrend(sRaw)?'Ø Schritte':'Schritte',data:sData,borderColor:'#47ffb8',backgroundColor:'#47ffb8',borderWidth:3,pointRadius:enoughForTrend(sRaw)?0:4,pointHoverRadius:6,pointBackgroundColor:'#47ffb8',pointBorderColor:'#47ffb8',tension:.25,fill:false,order:1,yAxisID:'yS',spanGaps:true,clip:false});
   if(showWeightRaw) datasets.push({label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:4,yAxisID:'yW'});
 
   korrelationChartI=new Chart(fresh,{
