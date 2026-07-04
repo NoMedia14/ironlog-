@@ -226,6 +226,11 @@
     .chart-check-toggle:hover{border-color:rgba(232,255,71,.35);color:var(--text);}
     .chart-check-toggle input{width:13px;height:13px;accent-color:var(--accent);cursor:pointer;}
     .chart-check-toggle span{line-height:1;}
+    .steps-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+    .steps-summary-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;}
+    .steps-summary-label{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+    .steps-summary-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--accent);}
+    .steps-conversion-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px;}
     .exercise-view-row{padding:12px 0;border-bottom:1px solid var(--border);}
     .exercise-view-row:last-child{border-bottom:none;}
     .exercise-view-main{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
@@ -672,6 +677,7 @@
     <button class="tab" data-tab="stats" onclick="showTab('stats',this)">📊 STATS</button>
     <button class="tab" data-tab="weight" onclick="showTab('weight',this)">⚖️ GEWICHT</button>
     <button class="tab" data-tab="macros" onclick="showTab('macros',this)">🔥 KALORIEN</button>
+    <button class="tab" data-tab="steps" onclick="showTab('steps',this)">👟 SCHRITTE</button>
     <button class="tab" id="bp-tab" data-tab="bp" onclick="showTab('bp',this)">❤️ BLUTDRUCK</button>
     <button class="tab" id="sleep-tab" data-tab="sleep" onclick="showTab('sleep',this)">😴 SCHLAF</button>
     <button class="tab" id="habits-tab" data-tab="habits" onclick="showTab('habits',this)">✅ HABITS</button>
@@ -781,6 +787,7 @@
           <button class="fbtn wmet" onclick="switchWMetric('bauch',this)">&#x1F4CF; Bauch</button>
           <button class="fbtn wmet" onclick="switchWMetric('hueft',this)">&#x1F4D0; H&#xFC;fte</button>
           <button class="fbtn wmet" onclick="switchWMetric('kcal',this)">&#x1F525; Kalorien</button>
+          <button class="fbtn wmet" onclick="switchWMetric('steps',this)">&#x1F45F; Schritte</button>
           <button class="fbtn wmet" onclick="switchWMetric('korrelation',this)">&#x1F4C8; Korrelation</button>
         </div>
         <canvas id="weightChart" height="200"></canvas>
@@ -792,6 +799,29 @@
         <div id="week-compare-out"></div></div>
       <div class="chart-title" style="padding:4px 0 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;">ALLE MESSUNGEN</div>
       <div id="weight-groups"></div>
+    </div>
+
+    <!-- STEPS -->
+    <div id="view-steps" class="view">
+      <div class="chart-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
+          <div class="chart-title" style="margin-bottom:0;">SCHRITTE</div>
+          <button class="btn btn-accent btn-sm" onclick="openStepModal()">+ Eintrag</button>
+        </div>
+        <div class="steps-summary-grid">
+          <div class="steps-summary-card">
+            <div class="steps-summary-label">Heute Schritte</div>
+            <div class="steps-summary-val" id="steps-today-count">0</div>
+          </div>
+          <div class="steps-summary-card">
+            <div class="steps-summary-label">Heute Kilometer</div>
+            <div class="steps-summary-val" id="steps-today-km">0,0</div>
+          </div>
+        </div>
+        <div class="steps-conversion-note">Umrechnung aus deiner Angabe: 4 km/h bei 110 Schritten pro Minute entspricht ca. 1 km = 1650 Schritte.</div>
+      </div>
+      <div class="chart-title" style="padding:4px 0 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;">ALLE EINTRÄGE</div>
+      <div id="steps-groups"></div>
     </div>
 
     <!-- BP -->
@@ -1170,6 +1200,30 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modal-step">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="step-modal-ttl">SCHRITTE ERFASSEN</div>
+      <button class="close-btn" onclick="closeModal('modal-step')">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field"><label>Datum</label><input type="date" id="step-date"></div>
+      <div class="field"><label>Uhrzeit</label><input type="time" id="step-time"></div>
+      <div class="field"><label>Schritte</label><input type="number" id="step-count" placeholder="6600" min="0" step="1" oninput="syncStepKmFromSteps()"></div>
+      <div class="field"><label>Kilometer</label><input type="number" id="step-km" placeholder="4,0" min="0" step="0.01" oninput="syncStepStepsFromKm()"></div>
+    </div>
+    <div class="field"><label>Notiz (optional)</label><input type="text" id="step-note" placeholder="z.B. Spaziergang, Laufband, Einkauf"></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Du kannst nur Schritte oder nur Kilometer eingeben. Das andere Feld wird automatisch berechnet.</p>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;">
+      <button class="btn btn-danger btn-sm" id="step-del-btn" style="display:none;" onclick="deleteStepEntry()">🗑 Löschen</button>
+      <div style="display:flex;gap:10px;margin-left:auto;">
+        <button class="btn btn-ghost" onclick="closeModal('modal-step')">Abbrechen</button>
+        <button class="btn btn-accent" onclick="saveStepEntry()">💾 Speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-bp">
   <div class="modal">
     <div class="modal-header">
@@ -1471,16 +1525,18 @@ const sb = createClient(SUPA_URL, SUPA_KEY, {
 });
 
 let currentUser=null, currentProfile=null;
-let sessions=[], plans=[], weightEntries=[], bpEntries=[], sleepEntries=[], moodEntries=[], habits=[], habitLogs=[], shares=[];
-let currentSessionId=null, editingWeightId=null, editingPlanId=null, editingBPId=null;
+let sessions=[], plans=[], weightEntries=[], bpEntries=[], sleepEntries=[], moodEntries=[], habits=[], habitLogs=[], shares=[], stepEntries=[];
+let currentSessionId=null, editingWeightId=null, editingPlanId=null, editingBPId=null, editingStepId=null;
 let activeTab='log';
 let pChartI=null, wkChartI=null, wtChartI=null, bpChartI=null;
 let currentWMetric='weight', currentBPView='both', showWeightRaw=true;
 let exCounter=0, setCounters={}, planExCounter=0, awSetCounters={};
 let timerRunning=false, timerSecs=0, timerTarget=null, timerStart=null, timerInterval=null, timerMinimized=false;
 let appReady=false;
+let stepEntriesUseSupabase=false;
 
 const g = id => document.getElementById(id);
+const STEPS_PER_KM = 1650;
 const GROUP_ARROW_OPEN = '▾';
 const GROUP_ARROW_CLOSED = '▸';
 function today(){ return new Date().toISOString().split('T')[0]; }
@@ -1492,6 +1548,24 @@ function weekLabel(ds){ return fmtD(weekMon(ds),{day:'2-digit',month:'short'}); 
 function monthKey(ds){ return ds.substring(0,7); }
 function monthLabel(mk){ const[y,m]=mk.split('-'); return new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString('de-DE',{month:'long',year:'numeric'}); }
 function nameInitial(n){ return n?n.charAt(0).toUpperCase():'?'; }
+function parseNum(v){ if(v===null||v===undefined||v==='')return null; const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?null:n; }
+function stepsToKm(steps){ return (parseFloat(steps)||0)/STEPS_PER_KM; }
+function kmToSteps(km){ return Math.round((parseFloat(km)||0)*STEPS_PER_KM); }
+function stepLocalKey(){ return 'ironlog_step_entries_'+(currentUser?.id||'guest'); }
+function loadLocalStepEntries(){
+  try{ return JSON.parse(localStorage.getItem(stepLocalKey())||'[]')||[]; }catch(e){ return []; }
+}
+function saveLocalStepEntries(){ localStorage.setItem(stepLocalKey(),JSON.stringify(stepEntries)); }
+function normalizeStepEntry(e){
+  const steps=parseInt(e.steps||0)||0;
+  const km=parseFloat(e.km||stepsToKm(steps))||0;
+  return {...e,steps,km};
+}
+function getDailyStepMap(entries=stepEntries){
+  const map={};
+  entries.forEach(e=>{ if(e.date) map[e.date]=(map[e.date]||0)+(parseInt(e.steps)||0); });
+  return map;
+}
 function setSyncState(s){ const d=g('sync-dot'); if(d) d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':''); }
 function showToast(msg,isErr=false){ const t=g('toast'); t.textContent=(isErr?'\u26a0 ':'\u2713 ')+msg; t.className='show'+(isErr?' err':''); setTimeout(()=>t.className='',2800); }
 function closeModal(id){ g(id).classList.remove('open'); }
@@ -1565,7 +1639,7 @@ function showAuthErr(id,msg,isErr=true){
 async function doLogout(){
   await sb.auth.signOut();
   currentUser=null; currentProfile=null; appReady=false;
-  sessions=[]; plans=[]; weightEntries=[]; bpEntries=[]; sleepEntries=[]; moodEntries=[]; habits=[]; habitLogs=[]; shares=[];
+  sessions=[]; plans=[]; weightEntries=[]; bpEntries=[]; sleepEntries=[]; moodEntries=[]; habits=[]; habitLogs=[]; shares=[]; stepEntries=[];
   showScreen('auth');
 }
 
@@ -1628,7 +1702,7 @@ sb.auth.onAuthStateChange(async(event, session)=>{
   console.log('Auth event:', event);
   if(event==='SIGNED_OUT'){
     currentUser=null; currentProfile=null; appReady=false;
-    sessions=[]; plans=[]; weightEntries=[]; bpEntries=[]; sleepEntries=[]; moodEntries=[]; habits=[]; habitLogs=[]; shares=[];
+    sessions=[]; plans=[]; weightEntries=[]; bpEntries=[]; sleepEntries=[]; moodEntries=[]; habits=[]; habitLogs=[]; shares=[]; stepEntries=[];
     showScreen('auth');
   }
   if(event==='TOKEN_REFRESHED' && session){
@@ -1700,7 +1774,7 @@ async function loadAllData(){
   setSyncState('syncing');
   try{
     const uid=currentUser.id;
-    const[s,p,w,b,sl,md,hb,hl,sh]=await Promise.all([
+    const[s,p,w,b,sl,md,hb,hl,sh,st]=await Promise.all([
       sb.from('sessions').select('*').eq('user_id',uid).order('date',{ascending:false}),
       sb.from('plans').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
       sb.from('weight_entries').select('*').eq('user_id',uid).order('date',{ascending:false}),
@@ -1709,16 +1783,28 @@ async function loadAllData(){
       sb.from('mood_entries').select('*').eq('user_id',uid).order('date',{ascending:false}),
       sb.from('habits').select('*').eq('user_id',uid).order('created_at',{ascending:true}),
       sb.from('habit_logs').select('*').eq('user_id',uid).order('date',{ascending:false}),
-      sb.from('shares').select('*').eq('owner_id',uid)
+      sb.from('shares').select('*').eq('owner_id',uid),
+      sb.from('step_entries').select('*').eq('user_id',uid).order('date',{ascending:false})
     ]);
     sessions=(s.data||[]).map(sess=>({
       ...sess,
       exercises: typeof sess.exercises === 'string' ? JSON.parse(sess.exercises||'[]') : (sess.exercises||[])
     })); plans=p.data||[]; weightEntries=w.data||[]; bpEntries=b.data||[];
     sleepEntries=sl.data||[]; moodEntries=md.data||[]; habits=hb.data||[]; habitLogs=hl.data||[]; shares=sh.data||[];
+    if(st && !st.error){
+      stepEntriesUseSupabase=true;
+      stepEntries=(st.data||[]).map(normalizeStepEntry);
+    }else{
+      stepEntriesUseSupabase=false;
+      stepEntries=loadLocalStepEntries().map(normalizeStepEntry);
+    }
     if(typeof invalidateExerciseViewIndex==='function') invalidateExerciseViewIndex();
     setSyncState('ok');
-  }catch(e){ setSyncState('error'); showToast('Sync-Fehler',true); }
+  }catch(e){
+    stepEntriesUseSupabase=false;
+    stepEntries=loadLocalStepEntries().map(normalizeStepEntry);
+    setSyncState('error'); showToast('Sync-Fehler',true);
+  }
 }
 
 // ── SETTINGS ──
@@ -1730,12 +1816,16 @@ const TAB_SETTINGS_BASE=[
   {id:'habits',  emoji:'✅', label:'Habits',   default:true},
   {id:'mood',    emoji:'😊', label:'Stimmung', default:true},
   {id:'macros',  emoji:'🔥', label:'Kalorien', default:true},
+  {id:'steps',   emoji:'👟', label:'Schritte', default:true},
 ];
 
 function getTabOrder(){
   try{
     const saved=JSON.parse(localStorage.getItem('il_tab_order')||'null');
-    if(saved&&Array.isArray(saved)&&saved.length>=TAB_SETTINGS_BASE.length) return saved;
+    if(saved&&Array.isArray(saved)){
+      const ids=TAB_SETTINGS_BASE.map(s=>s.id);
+      return saved.filter(id=>ids.includes(id)).concat(ids.filter(id=>!saved.includes(id)));
+    }
   }catch(e){}
   return TAB_SETTINGS_BASE.map(s=>s.id);
 }
@@ -2298,6 +2388,7 @@ function showTab(tab,el){
   if(tab==='plans') renderPlans();
   if(tab==='stats') renderStats();
   if(tab==='weight') renderWeight();
+  if(tab==='steps') renderSteps();
   if(tab==='bp') renderBP();
   if(tab==='sleep') renderSleep();
   if(tab==='mood') renderMood();
@@ -2313,7 +2404,7 @@ function showTab(tab,el){
 }
 function updateFab(){
   const f=g('main-fab');
-  const cfg={log:'fab-yellow',plans:'fab-blue',weight:'fab-teal',bp:'fab-red',sleep:'fab-purple',mood:'fab-orange',habits:'fab-green'};
+  const cfg={log:'fab-yellow',plans:'fab-blue',weight:'fab-teal',steps:'fab-teal',bp:'fab-red',sleep:'fab-purple',mood:'fab-orange',habits:'fab-green'};
   if(!cfg[activeTab]){f.style.display='none';return;}
   f.style.display='flex'; f.className='fab '+cfg[activeTab]; f.textContent='＋';
 }
@@ -2321,6 +2412,7 @@ function fabAction(){
   if(activeTab==='log') openBlankSession();
   else if(activeTab==='plans') openNewPlan();
   else if(activeTab==='weight') openWeightModal();
+  else if(activeTab==='steps') openStepModal();
   else if(activeTab==='bp') openBPModal();
   else if(activeTab==='sleep') openSleepModal();
   else if(activeTab==='mood') openMoodModal();
@@ -3416,17 +3508,24 @@ function renderWeightChart(){
   oldW.parentNode.replaceChild(freshW,oldW);
 
   const m=currentWMetric;
-  const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorien (kcal)'};
-  const colors={weight:'#47c8ff',bauch:'#47ffb8',hueft:'#c847ff',kcal:'#ff9f47'};
-  const filtered=filterByTime(weightEntries, wTimeFilter);
-  const pts=filtered.filter(e=>e[m]).map(e=>({date:e.date,val:parseFloat(e[m])})).sort((a,b)=>a.date.localeCompare(b.date));
-  const maVals = m!=='kcal' ? calcMA(pts.map(p=>p.val),7) : calcMA(pts.map(p=>p.val),7);
+  const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorien (kcal)',steps:'Schritte'};
+  const colors={weight:'#47c8ff',bauch:'#47ffb8',hueft:'#c847ff',kcal:'#ff9f47',steps:'#47ffb8'};
+  const bgRgb={weight:'71,200,255',bauch:'71,255,184',hueft:'200,71,255',kcal:'255,159,71',steps:'71,255,184'};
+  let pts=[];
+  if(m==='steps'){
+    const stepMap=getDailyStepMap();
+    pts=filterByTime(Object.keys(stepMap).map(date=>({date,val:stepMap[date]})), wTimeFilter).sort((a,b)=>a.date.localeCompare(b.date));
+  }else{
+    const filtered=filterByTime(weightEntries, wTimeFilter);
+    pts=filtered.filter(e=>e[m]).map(e=>({date:e.date,val:parseFloat(e[m])})).sort((a,b)=>a.date.localeCompare(b.date));
+  }
+  const maVals = calcMA(pts.map(p=>p.val),7);
   const col=colors[m]||'#47c8ff';
   const datasets=[
-    {label:'Ø 7 Tage',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[],order:1,spanGaps:true}
+    {label:'Trend Ø 7 Tage',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[],order:1,spanGaps:true}
   ];
   if(showWeightRaw){
-    datasets.unshift({label:lmap[m],data:pts.map(p=>p.val),borderColor:col,backgroundColor:`rgba(${col==='#47c8ff'?'71,200,255':col==='#47ffb8'?'71,255,184':col==='#c847ff'?'200,71,255':'255,159,71'},.08)`,pointBackgroundColor:col,pointRadius:pts.length>60?2:4,tension:.3,fill:true,order:2});
+    datasets.unshift({label:lmap[m],data:pts.map(p=>p.val),borderColor:col,backgroundColor:`rgba(${bgRgb[m]||'71,200,255'},.08)`,pointBackgroundColor:col,pointRadius:pts.length>60?2:4,tension:.3,fill:true,order:2});
   }
   wtChartI=new Chart(g('weightChart'),{type:'line',data:{labels:pts.map(p=>fmtShort(p.date)),datasets},options:{plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Trend')}}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
 }
@@ -3442,80 +3541,60 @@ function pearson(xs, ys){
 }
 
 function renderKorrelationChart(){
-  const chartEl=g('korrelationChart');
-
-  // Build date-indexed maps from filtered entries
-  const filtered = filterByTime(weightEntries, wTimeFilter);
-  const wMap={}, kMap={};
-  filtered.forEach(e=>{
-    if(e.weight) wMap[e.date]=parseFloat(e.weight);
-    if(e.kcal)   kMap[e.date]=parseFloat(e.kcal);
-  });
-
-  // Check if we have any kcal data at all
-  if(!Object.keys(kMap).length){
-    return;
-  }
-
-  // Find dates with BOTH weight and kcal
-  const dates=[...new Set([...Object.keys(wMap),...Object.keys(kMap)])].sort();
-
-  // Try lag 0,1,2,3 days – find best correlation
-  let bestR=0, bestLag=0;
-  for(let lag=0;lag<=3;lag++){
-    const pairs=[];
-    dates.forEach(d=>{
-      if(wMap[d]===undefined) return;
-      // Find kcal from lag days ago
-      const lagDate=new Date(d); lagDate.setDate(lagDate.getDate()-lag);
-      const lagStr=lagDate.toISOString().split('T')[0];
-      if(kMap[lagStr]!==undefined) pairs.push({w:wMap[d], k:kMap[lagStr]});
-    });
-    if(pairs.length<7) continue;
-    const r=pearson(pairs.map(p=>p.k), pairs.map(p=>p.w));
-    if(Math.abs(r)>Math.abs(bestR)){bestR=r;bestLag=lag;}
-  }
-
-  // Build chart pairs using bestLag
-  const chartPairs=[];
-  dates.forEach(d=>{
-    if(wMap[d]===undefined) return;
-    const lagDate=new Date(d); lagDate.setDate(lagDate.getDate()-bestLag);
-    const lagStr=lagDate.toISOString().split('T')[0];
-    if(kMap[lagStr]!==undefined) chartPairs.push({date:d, kDate:lagStr, w:wMap[d], k:kMap[lagStr]});
-  });
-
-  // Only render the chart when there are enough paired data points.
-  const minPairs = wTimeFilter==='14d' ? 5 : 14;
-  if(chartPairs.length<minPairs) return;
-
-  // Build dual-axis chart
   const old=g('korrelationChart'); if(!old)return;
   const fresh=document.createElement('canvas'); fresh.id='korrelationChart'; fresh.height=220;
   old.parentNode.replaceChild(fresh,old);
   if(korrelationChartI){try{korrelationChartI.destroy();}catch(e){}}
 
-  // Smooth kcal with 7-day MA for cleaner visual
-  const kRaw=chartPairs.map(p=>p.k);
-  const kSmooth=calcMA(kRaw,7);
+  const filtered = filterByTime(weightEntries, wTimeFilter);
+  const wMap={}, kMap={};
+  filtered.forEach(e=>{
+    if(e.weight) wMap[e.date]=parseFloat(e.weight);
+    if(e.kcal) kMap[e.date]=parseFloat(e.kcal);
+  });
+  const sMap=getDailyStepMap(filterByTime(stepEntries, wTimeFilter));
+  const dates=[...new Set([...Object.keys(wMap),...Object.keys(kMap),...Object.keys(sMap)])].sort();
+  const chartPairs=dates.filter(d=>wMap[d]!==undefined).map(d=>({
+    date:d,
+    w:wMap[d],
+    k:kMap[d]!==undefined?kMap[d]:null,
+    s:sMap[d]!==undefined?sMap[d]:null
+  })).filter(p=>p.k!==null||p.s!==null);
+
+  const minPairs = wTimeFilter==='14d' ? 3 : 5;
+  if(chartPairs.length<minPairs){
+    fresh.parentNode.innerHTML='<div style="text-align:center;padding:28px 10px;color:var(--muted);font-size:13px;">Zu wenig gemeinsame Daten für Korrelation.</div><canvas id="korrelationChart" height="220" style="display:none;"></canvas>';
+    return;
+  }
+
   const wVals=chartPairs.map(p=>p.w);
   const wSmooth=calcMA(wVals,7);
+  const kRaw=chartPairs.map(p=>p.k);
+  const kSmooth=calcMA(kRaw,7);
+  const sRaw=chartPairs.map(p=>p.s);
+  const sSmooth=calcMA(sRaw,7);
+  const hasK=kRaw.some(v=>v!==null);
+  const hasS=sRaw.some(v=>v!==null);
+  const datasets=[
+    {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:3,yAxisID:'yW',spanGaps:true}
+  ];
+  if(hasK) datasets.push({label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yK',spanGaps:true});
+  if(hasS) datasets.push({label:'Ø Schritte',data:sSmooth,borderColor:'#47ffb8',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yS',spanGaps:true});
+  if(showWeightRaw) datasets.push({label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:4,yAxisID:'yW'});
 
   korrelationChartI=new Chart(fresh,{
     type:'line',
     data:{
       labels:chartPairs.map(p=>fmtShort(p.date)),
-      datasets:[
-        {label:'Ø Gewicht',data:wSmooth,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:2,yAxisID:'yW',spanGaps:true},
-        {label:'Ø Kalorien',data:kSmooth,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:0,tension:.4,fill:false,order:1,yAxisID:'yK',spanGaps:true}
-      ].concat(showWeightRaw?[{label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:3,yAxisID:'yW'}]:[])
+      datasets
     },
     options:{
       plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:6,boxHeight:6,usePointStyle:true,pointStyle:'circle'}}},
       scales:{
         x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
         yW:{position:'left',ticks:{color:'#47c8ff',font:{size:10}},grid:{color:'#2a2a38'},title:{display:true,text:'kg',color:'#47c8ff',font:{size:10}}},
-        yK:{position:'right',ticks:{color:'#ff9f47',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'kcal',color:'#ff9f47',font:{size:10}}}
+        yK:{position:'right',display:hasK,ticks:{color:'#ff9f47',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'kcal',color:'#ff9f47',font:{size:10}}},
+        yS:{position:'right',display:hasS&&!hasK,ticks:{color:'#47ffb8',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'Schritte',color:'#47ffb8',font:{size:10}}}
       }
     }
   });
@@ -3575,6 +3654,148 @@ function renderWeightGroups(){
         <span id="yarr-w-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</span>
       </div>
       <div class="year-body${isCurrentYear?' open':''}" id="yb-w-${yr}">${monthsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── STEPS ──
+function renderSteps(){
+  const todaySteps=getDailyStepMap()[today()]||0;
+  if(g('steps-today-count')) g('steps-today-count').textContent=todaySteps.toLocaleString('de-DE');
+  if(g('steps-today-km')) g('steps-today-km').textContent=stepsToKm(todaySteps).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+  renderStepGroups();
+}
+function openStepModal(entry=null){
+  editingStepId=entry?entry.id:null;
+  g('step-modal-ttl').textContent=entry?'SCHRITTE BEARBEITEN':'SCHRITTE ERFASSEN';
+  g('step-date').value=entry?entry.date:today();
+  g('step-time').value=entry?(entry.time||''):nowTime();
+  g('step-count').value=entry?(entry.steps||''):'';
+  g('step-km').value=entry?(parseFloat(entry.km||0).toFixed(2)):'';
+  g('step-note').value=entry?(entry.note||''):'';
+  g('step-del-btn').style.display=entry?'block':'none';
+  g('modal-step').classList.add('open');
+}
+function openStepModalByData(encoded){
+  try{ openStepModal(JSON.parse(decodeURIComponent(encoded))); }catch(e){ openStepModal(); }
+}
+let _stepSyncing=false;
+function syncStepKmFromSteps(){
+  if(_stepSyncing)return;
+  _stepSyncing=true;
+  const steps=parseNum(g('step-count').value);
+  g('step-km').value=steps!==null&&steps>0?stepsToKm(steps).toFixed(2):'';
+  _stepSyncing=false;
+}
+function syncStepStepsFromKm(){
+  if(_stepSyncing)return;
+  _stepSyncing=true;
+  const km=parseNum(g('step-km').value);
+  g('step-count').value=km!==null&&km>0?kmToSteps(km):'';
+  _stepSyncing=false;
+}
+async function saveStepEntry(){
+  const date=g('step-date').value;
+  const time=g('step-time').value;
+  let steps=parseNum(g('step-count').value);
+  let km=parseNum(g('step-km').value);
+  const note=g('step-note').value.trim();
+  if(!date){alert('Bitte Datum eingeben.');return;}
+  if((steps===null||steps<=0)&&(km===null||km<=0)){alert('Bitte Schritte oder Kilometer eingeben.');return;}
+  if((steps===null||steps<=0)&&km>0) steps=kmToSteps(km);
+  if((km===null||km<=0)&&steps>0) km=stepsToKm(steps);
+  const entry={date,time,steps:Math.round(steps),km:parseFloat(km.toFixed(2)),note};
+  setSyncState('syncing');
+  if(stepEntriesUseSupabase&&currentUser){
+    const dbEntry={...entry,user_id:currentUser.id};
+    let res;
+    if(editingStepId) res=await sb.from('step_entries').update(dbEntry).eq('id',editingStepId).eq('user_id',currentUser.id).select().single();
+    else res=await sb.from('step_entries').insert(dbEntry).select().single();
+    if(!res.error){
+      await loadAllData();
+      closeModal('modal-step');
+      renderSteps();
+      if(activeTab==='weight') renderWeight();
+      showToast('Schritte gespeichert!');
+      return;
+    }
+    stepEntriesUseSupabase=false;
+  }
+  if(editingStepId){
+    stepEntries=stepEntries.map(e=>e.id===editingStepId?{...e,...entry}:e);
+  }else{
+    stepEntries.unshift({...entry,id:'local-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)});
+  }
+  stepEntries=stepEntries.map(normalizeStepEntry).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  saveLocalStepEntries();
+  setSyncState('ok');
+  closeModal('modal-step');
+  renderSteps();
+  if(activeTab==='weight') renderWeight();
+  showToast('Schritte gespeichert!');
+}
+async function deleteStepEntry(){
+  if(!editingStepId||!confirm('Löschen?'))return;
+  setSyncState('syncing');
+  if(stepEntriesUseSupabase&&currentUser){
+    const res=await sb.from('step_entries').delete().eq('id',editingStepId).eq('user_id',currentUser.id);
+    if(!res.error){
+      await loadAllData();
+      closeModal('modal-step');
+      renderSteps();
+      if(activeTab==='weight') renderWeight();
+      showToast('Gelöscht.');
+      return;
+    }
+    stepEntriesUseSupabase=false;
+  }
+  stepEntries=stepEntries.filter(e=>e.id!==editingStepId);
+  saveLocalStepEntries();
+  setSyncState('ok');
+  closeModal('modal-step');
+  renderSteps();
+  if(activeTab==='weight') renderWeight();
+  showToast('Gelöscht.');
+}
+function renderStepGroups(){
+  const el=g('steps-groups'); if(!el)return;
+  if(!stepEntries.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Noch keine Schritte erfasst.</div>';return;}
+  const years={};
+  stepEntries.forEach(e=>{
+    const y=e.date.substring(0,4), mk=monthKey(e.date);
+    if(!years[y]) years[y]={};
+    if(!years[y][mk]) years[y][mk]=[];
+    years[y][mk].push(e);
+  });
+  const yearKeys=Object.keys(years).sort().reverse();
+  let idx=0;
+  el.innerHTML=yearKeys.map(yr=>{
+    const months=years[yr];
+    const mkeys=Object.keys(months).sort().reverse();
+    const monthsHtml=mkeys.map((mk,mi)=>{
+      const id=idx++;
+      const entries=[...months[mk]].sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+      const total=entries.reduce((sum,e)=>sum+(parseInt(e.steps)||0),0);
+      const rows=entries.map(e=>{
+        const encoded=encodeURIComponent(JSON.stringify(e));
+        const vals=[`👟 <b>${(parseInt(e.steps)||0).toLocaleString('de-DE')} Schritte</b>`,`<b>${(parseFloat(e.km)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} km</b>`];
+        if(e.note) vals.push(`<span style="color:var(--muted);font-size:11px;">${htmlEscape(e.note)}</span>`);
+        return`<div class="data-entry-row" onclick="openStepModalByData('${encoded}')"><div><div class="data-entry-date">${fmtD(e.date,{weekday:'short',day:'2-digit',month:'short'})}${e.time?' · '+htmlEscape(e.time):''}</div><div class="data-entry-vals">${vals.map(v=>`<span>${v}</span>`).join('')}</div></div><span style="color:var(--muted)">✏️</span></div>`;
+      }).join('');
+      const isFirst=(yr===yearKeys[0]&&mi===0);
+      return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('sg-${id}')"><div><div class="data-group-title" style="color:var(--accent4);">${monthLabel(mk)}</div><div class="data-group-meta">${total.toLocaleString('de-DE')} Schritte · ${entries.length} Einträge</div></div><div id="sg-arr-${id}">${isFirst?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</div></div><div class="data-group-body${isFirst?' open':''}" id="sg-${id}">${rows}</div></div>`;
+    }).join('');
+    const totalEntries=Object.values(months).flat().length;
+    const isCurrentYear=(yr===yearKeys[0]);
+    return`<div class="year-group" id="yg-s-${yr}">
+      <div class="year-header" onclick="toggleYearGroup('yg-s-${yr}')">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--accent);">${yr}</span>
+          <span style="font-size:12px;color:var(--muted);">${totalEntries} Einträge</span>
+        </div>
+        <span id="yarr-s-${yr}" style="color:var(--muted);font-size:12px;">${isCurrentYear?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</span>
+      </div>
+      <div class="year-body${isCurrentYear?' open':''}" id="yb-s-${yr}">${monthsHtml}</div>
     </div>`;
   }).join('');
 }
