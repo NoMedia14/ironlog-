@@ -98,7 +98,8 @@
     /* INPUTS */
     input,textarea,select{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;width:100%;transition:border-color .2s;outline:none;}
     input:focus,textarea:focus,select:focus{border-color:var(--accent);}
-    select option{background:var(--card);}
+    select option{background:var(--card);color:var(--text);}
+    select optgroup{background:var(--surface);color:var(--accent3);font-weight:800;}
     label{font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px;}
     .field{margin-bottom:14px;}
 
@@ -248,6 +249,22 @@
     .steps-summary-label{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
     .steps-summary-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--accent);}
     .steps-conversion-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px;}
+    .step-week-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+    .step-week-range{font-size:11px;color:var(--muted);margin-top:3px;}
+    .step-week-total{font-family:'Bebas Neue',sans-serif;font-size:42px;line-height:1;letter-spacing:2px;color:var(--accent);}
+    .step-week-total span{font-family:'DM Sans',sans-serif;font-size:13px;letter-spacing:0;color:var(--muted);font-weight:600;}
+    .step-week-progress{height:12px;background:var(--surface);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin:14px 0 12px;}
+    .step-week-progress-fill{height:100%;border-radius:inherit;background:var(--accent4);transition:width .25s ease;}
+    .step-week-metrics{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px;}
+    .step-week-metric{padding:12px 10px;text-align:center;border-right:1px solid var(--border);}
+    .step-week-metric:last-child{border-right:none;}
+    .step-week-metric-val{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--text);}
+    .step-week-metric-label{font-size:9px;color:var(--muted);font-weight:800;letter-spacing:.7px;text-transform:uppercase;margin-top:2px;}
+    .step-history-row{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;}
+    .step-history-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+    .step-history-result{font-size:11px;font-weight:800;white-space:nowrap;}
+    .step-history-progress{height:7px;background:var(--surface);border-radius:999px;overflow:hidden;margin-top:10px;}
+    .step-history-progress>div{height:100%;border-radius:inherit;background:var(--accent4);}
     .exercise-view-row{padding:12px 0;border-bottom:1px solid var(--border);}
     .exercise-view-row:last-child{border-bottom:none;}
     .exercise-view-main{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
@@ -626,6 +643,11 @@
       .plan-ex-grid .del-set{grid-column:4;grid-row:1;margin-bottom:2px!important;}
       .cali-plan-top{align-items:flex-start;}
       .cali-adjust{flex-wrap:wrap;justify-content:flex-end;}
+      .step-week-head{align-items:flex-start;}
+      .step-week-total{font-size:36px;}
+      .step-week-metric{padding:10px 5px;}
+      .step-week-metric-val{font-size:20px;}
+      .step-week-metric-label{font-size:8px;}
     }
     @media(prefers-reduced-motion:reduce){
       *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important;}
@@ -839,19 +861,12 @@
           <div class="chart-title" style="margin-bottom:0;">SCHRITTE</div>
           <button class="btn btn-accent btn-sm" onclick="openStepModal()">+ Eintrag</button>
         </div>
-        <div class="steps-summary-grid">
-          <div class="steps-summary-card">
-            <div class="steps-summary-label">Heute Schritte</div>
-            <div class="steps-summary-val" id="steps-today-count">0</div>
-          </div>
-          <div class="steps-summary-card">
-            <div class="steps-summary-label">Heute Kilometer</div>
-            <div class="steps-summary-val" id="steps-today-km">0,0</div>
-          </div>
-        </div>
+        <div id="steps-week-overview"></div>
         <div class="steps-conversion-note">Umrechnung aus deiner Angabe: 4 km/h bei 110 Schritten pro Minute entspricht ca. 1 km = 1650 Schritte.</div>
       </div>
-      <div class="chart-title" style="padding:4px 0 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;">ALLE EINTRÄGE</div>
+      <div class="chart-title" style="padding:4px 0 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;">VERGANGENE WOCHEN</div>
+      <div id="steps-week-history"></div>
+      <div class="chart-title" style="padding:14px 0 10px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;">TÄGLICHE EINTRÄGE</div>
       <div id="steps-groups"></div>
     </div>
 
@@ -1267,6 +1282,21 @@
   </div>
 </div>
 
+<div class="modal-bg" id="modal-step-goal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">WOCHENZIEL SCHRITTE</div>
+      <button class="close-btn" onclick="closeModal('modal-step-goal')">✕</button>
+    </div>
+    <div class="field"><label>Schritte pro Woche</label><input type="number" id="step-week-goal-input" min="1" step="1000" inputmode="numeric" placeholder="70000"></div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px;">Gilt für die aktuelle Woche und automatisch für kommende Wochen. Bereits abgeschlossene Wochen behalten ihr gespeichertes Ziel.</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-step-goal')">Abbrechen</button>
+      <button class="btn btn-accent" onclick="saveStepWeeklyGoal()">💾 Ziel speichern</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-bp">
   <div class="modal">
     <div class="modal-header">
@@ -1579,6 +1609,7 @@ let timerRunning=false, timerSecs=0, timerTarget=null, timerStart=null, timerInt
 let appReady=false;
 let stepEntriesUseSupabase=false;
 let trainingModeSaveTimer=null, trainingModeSaveVersion=0;
+let stepWeeklyGoalDefault=0, stepWeeklyGoals={}, stepGoalSaveTimer=null, stepGoalSaveVersion=0;
 
 const g = id => document.getElementById(id);
 const STEPS_PER_KM = 1650;
@@ -1645,6 +1676,73 @@ function persistTrainingMode(mode){
     if(data?.user)currentUser=data.user;
     setSyncState('ok');
   },300);
+}
+function calendarWeekMonday(ds){
+  const d=new Date(dateKey(ds)+'T12:00:00');
+  const day=d.getDay()||7;
+  d.setDate(d.getDate()-day+1);
+  return d.toISOString().slice(0,10);
+}
+function stepGoalLocalKey(type){ return `ironlog_step_week_${type}_${currentUser?.id||'guest'}`; }
+function normalizeStepGoalMap(raw){
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return {};
+  return Object.fromEntries(Object.entries(raw).filter(([week,goal])=>/^\d{4}-\d{2}-\d{2}$/.test(week)&&(parseInt(goal,10)||0)>0).map(([week,goal])=>[week,parseInt(goal,10)]));
+}
+function restoreStepGoalState(rerender=false){
+  const meta=currentUser?.user_metadata||{};
+  let localGoals={};
+  try{localGoals=JSON.parse(localStorage.getItem(stepGoalLocalKey('goals'))||'{}');}catch(e){}
+  stepWeeklyGoals=normalizeStepGoalMap(meta.ironlog_step_weekly_goals||localGoals);
+  stepWeeklyGoalDefault=parseInt(meta.ironlog_step_weekly_goal_default,10)||parseInt(localStorage.getItem(stepGoalLocalKey('default')),10)||0;
+  if(rerender&&activeTab==='steps')renderSteps();
+}
+function persistStepGoalState(){
+  localStorage.setItem(stepGoalLocalKey('default'),String(stepWeeklyGoalDefault||0));
+  localStorage.setItem(stepGoalLocalKey('goals'),JSON.stringify(stepWeeklyGoals));
+  if(currentUser)currentUser={...currentUser,user_metadata:{...(currentUser.user_metadata||{}),ironlog_step_weekly_goal_default:stepWeeklyGoalDefault,ironlog_step_weekly_goals:stepWeeklyGoals}};
+  const version=++stepGoalSaveVersion;
+  clearTimeout(stepGoalSaveTimer);
+  stepGoalSaveTimer=setTimeout(async()=>{
+    if(!currentUser||version!==stepGoalSaveVersion)return;
+    setSyncState('syncing');
+    const{data,error}=await sb.auth.updateUser({data:{ironlog_step_weekly_goal_default:stepWeeklyGoalDefault,ironlog_step_weekly_goals:stepWeeklyGoals}});
+    if(version!==stepGoalSaveVersion)return;
+    if(error){setSyncState('error');showToast('Wochenziel konnte nur auf diesem Gerät gespeichert werden.',true);return;}
+    if(data?.user)currentUser=data.user;
+    setSyncState('ok');
+  },300);
+}
+function ensureCurrentStepWeekGoal(){
+  const week=calendarWeekMonday(today());
+  if(!stepWeeklyGoals[week]&&stepWeeklyGoalDefault>0){
+    stepWeeklyGoals[week]=stepWeeklyGoalDefault;
+    persistStepGoalState();
+  }
+  return parseInt(stepWeeklyGoals[week],10)||0;
+}
+function ensureStepGoalForDate(date){
+  const week=calendarWeekMonday(date);
+  if(!stepWeeklyGoals[week]&&stepWeeklyGoalDefault>0){
+    stepWeeklyGoals[week]=stepWeeklyGoalDefault;
+    persistStepGoalState();
+  }
+  return parseInt(stepWeeklyGoals[week],10)||0;
+}
+function openStepGoalModal(){
+  const current=stepWeeklyGoals[calendarWeekMonday(today())]||stepWeeklyGoalDefault||'';
+  g('step-week-goal-input').value=current;
+  g('modal-step-goal').classList.add('open');
+  setTimeout(()=>g('step-week-goal-input')?.focus(),50);
+}
+function saveStepWeeklyGoal(){
+  const goal=parseInt(g('step-week-goal-input').value,10)||0;
+  if(goal<1){showToast('Bitte ein gültiges Wochenziel eingeben.',true);return;}
+  stepWeeklyGoalDefault=goal;
+  stepWeeklyGoals[calendarWeekMonday(today())]=goal;
+  persistStepGoalState();
+  closeModal('modal-step-goal');
+  renderSteps();
+  showToast('Wochenziel gespeichert!');
 }
 function weekMon(ds){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()-((d.getDay()+2)%7)); return d.toISOString().split('T')[0]; } // groups by Friday
 function weekLabel(ds){ return fmtD(weekMon(ds),{day:'2-digit',month:'short'}); }
@@ -1743,6 +1841,7 @@ async function doLogout(){
   await sb.auth.signOut();
   currentUser=null; currentProfile=null; appReady=false;
   sessions=[]; plans=[]; weightEntries=[]; bpEntries=[]; sleepEntries=[]; moodEntries=[]; habits=[]; habitLogs=[]; shares=[]; stepEntries=[];
+  stepWeeklyGoalDefault=0; stepWeeklyGoals={};
   showScreen('auth');
 }
 
@@ -1762,6 +1861,7 @@ async function showApp(session){
       if(userData?.user)currentUser=userData.user;
     }catch(e){}
     restoreTrainingMode();
+    restoreStepGoalState();
     await loadProfile();
     await loadAllData();
   }catch(e){ console.error('Load error:',e); }
@@ -1816,6 +1916,7 @@ sb.auth.onAuthStateChange(async(event, session)=>{
   if(event==='TOKEN_REFRESHED' && session){
     currentUser=session.user;
     restoreTrainingMode(true);
+    restoreStepGoalState(true);
   }
   // INITIAL_SESSION fires on page load if session exists - use it as backup
   if(event==='INITIAL_SESSION' && session && !appReady){
@@ -1829,7 +1930,7 @@ document.addEventListener('visibilitychange', async()=>{
   try{
     if(appReady&&currentUser){
       const{data}=await sb.auth.getUser();
-      if(data?.user){currentUser=data.user;restoreTrainingMode(true);}
+      if(data?.user){currentUser=data.user;restoreTrainingMode(true);restoreStepGoalState(true);}
     }else if(!appReady){
       const {data:{session}}=await sb.auth.getSession();
       if(session && !appReady) await showApp(session);
@@ -2557,8 +2658,8 @@ function populateLogPlanSelect(){
   const classic=active.filter(p=>planMode(p)==='classic');
   const cali=active.filter(p=>planMode(p)==='calisthenics');
   let html='<option value="">— Plan wählen —</option>';
-  if(classic.length)html+=`<optgroup label="Klassik">${classic.map(p=>`<option value="${p.id}">${htmlEscape(p.name)}</option>`).join('')}</optgroup>`;
-  if(cali.length)html+=`<optgroup label="Calisthenics · Wochenziele">${cali.map(p=>`<option value="${p.id}">${htmlEscape(p.name)}</option>`).join('')}</optgroup>`;
+  html+=classic.map(p=>`<option value="${p.id}">Klassik · ${htmlEscape(p.name)}</option>`).join('');
+  html+=cali.map(p=>`<option value="${p.id}">Calisthenics · ${htmlEscape(p.name)}</option>`).join('');
   sel.innerHTML=html;
 }
 function startSelectedPlan(){ const pid=g('log-plan-sel').value; if(!pid){showToast('Bitte Plan auswählen.',true);return;} const plan=plans.find(p=>p.id===pid); if(plan) startWorkout(plan); }
@@ -4061,10 +4162,59 @@ function renderWeightGroups(){
 
 // ── STEPS ──
 function renderSteps(){
-  const todaySteps=getDailyStepMap()[today()]||0;
-  if(g('steps-today-count')) g('steps-today-count').textContent=todaySteps.toLocaleString('de-DE');
-  if(g('steps-today-km')) g('steps-today-km').textContent=stepsToKm(todaySteps).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+  renderCurrentStepWeek();
+  renderStepWeekHistory();
   renderStepGroups();
+}
+function stepTotalForWeek(weekStart,dailyMap=getDailyStepMap()){
+  let total=0;
+  for(let i=0;i<7;i++)total+=dailyMap[addDays(weekStart,i)]||0;
+  return total;
+}
+function renderCurrentStepWeek(){
+  const el=g('steps-week-overview'); if(!el)return;
+  const current=today(), weekStart=calendarWeekMonday(current), weekEnd=addDays(weekStart,6);
+  const dailyMap=getDailyStepMap(), total=stepTotalForWeek(weekStart,dailyMap), todaySteps=dailyMap[current]||0;
+  const goal=ensureCurrentStepWeekGoal();
+  if(!goal){
+    el.innerHTML=`<div class="step-week-head"><div><div style="font-size:13px;font-weight:800;">Montag bis Sonntag</div><div class="step-week-range">${fmtD(weekStart,{day:'2-digit',month:'short'})} – ${fmtD(weekEnd,{day:'2-digit',month:'short',year:'numeric'})}</div></div><button class="btn btn-teal btn-sm" onclick="openStepGoalModal()">Ziel festlegen</button></div>
+      <div style="padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"><div style="font-size:13px;font-weight:700;margin-bottom:4px;">Noch kein Wochenziel</div><div style="font-size:11px;color:var(--muted);">Lege einmal dein Ziel fest. Danach beginnt es jeden Montag automatisch neu.</div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;">Heute: <strong style="color:var(--text);">${todaySteps.toLocaleString('de-DE')} Schritte</strong> · ${stepsToKm(todaySteps).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})} km</div>`;
+    return;
+  }
+  const remaining=Math.max(0,goal-total), endMs=new Date(weekEnd+'T12:00:00').getTime(), currentMs=new Date(current+'T12:00:00').getTime();
+  const daysLeft=Math.max(1,Math.floor((endMs-currentMs)/86400000)+1);
+  const perDay=remaining?Math.ceil(remaining/daysLeft):0;
+  const progress=Math.min(100,Math.round(total/goal*100));
+  el.innerHTML=`<div class="step-week-head">
+      <div><div class="step-week-total">${total.toLocaleString('de-DE')} <span>/ ${goal.toLocaleString('de-DE')}</span></div><div class="step-week-range">${fmtD(weekStart,{day:'2-digit',month:'short'})} – ${fmtD(weekEnd,{day:'2-digit',month:'short',year:'numeric'})}</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="openStepGoalModal()">Ziel bearbeiten</button>
+    </div>
+    <div class="step-week-progress"><div class="step-week-progress-fill" style="width:${progress}%"></div></div>
+    <div class="step-week-metrics">
+      <div class="step-week-metric"><div class="step-week-metric-val" style="color:${remaining?'var(--accent)':'var(--accent4)'};">${remaining.toLocaleString('de-DE')}</div><div class="step-week-metric-label">Schritte fehlen</div></div>
+      <div class="step-week-metric"><div class="step-week-metric-val">${daysLeft}</div><div class="step-week-metric-label">Tag${daysLeft!==1?'e':''} übrig</div></div>
+      <div class="step-week-metric"><div class="step-week-metric-val">${perDay.toLocaleString('de-DE')}</div><div class="step-week-metric-label">Pro Tag nötig</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);"><span>Heute: <strong style="color:var(--text);">${todaySteps.toLocaleString('de-DE')}</strong> Schritte</span><span>${progress}% des Wochenziels</span></div>`;
+}
+function renderStepWeekHistory(){
+  const el=g('steps-week-history'); if(!el)return;
+  const currentWeek=calendarWeekMonday(today()), dailyMap=getDailyStepMap();
+  const weeks=new Set(Object.keys(stepWeeklyGoals));
+  stepEntries.forEach(entry=>{if(entry.date)weeks.add(calendarWeekMonday(entry.date));});
+  const past=[...weeks].filter(week=>week<currentWeek).sort().reverse();
+  if(!past.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0 16px;">Noch keine abgeschlossene Woche gespeichert.</div>';return;}
+  el.innerHTML=past.map(week=>{
+    const end=addDays(week,6), total=stepTotalForWeek(week,dailyMap), goal=parseInt(stepWeeklyGoals[week],10)||0;
+    const reached=goal>0&&total>=goal, missing=goal?Math.max(0,goal-total):0, extra=goal?Math.max(0,total-goal):0;
+    const pct=goal?Math.min(100,Math.round(total/goal*100)):0;
+    const result=!goal?'Kein Ziel gespeichert':reached?`Ziel erreicht${extra?` · +${extra.toLocaleString('de-DE')}`:''}`:`${missing.toLocaleString('de-DE')} gefehlt`;
+    return `<div class="step-history-row">
+      <div class="step-history-top"><div><div style="font-size:13px;font-weight:800;">${fmtD(week,{day:'2-digit',month:'short'})} – ${fmtD(end,{day:'2-digit',month:'short',year:'numeric'})}</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">${total.toLocaleString('de-DE')} Schritte${goal?` von ${goal.toLocaleString('de-DE')}`:''}</div></div><div class="step-history-result" style="color:${reached?'var(--accent4)':goal?'var(--accent2)':'var(--muted)'};">${result}</div></div>
+      ${goal?`<div class="step-history-progress"><div style="width:${pct}%;background:${reached?'var(--accent4)':'var(--accent)'};"></div></div>`:''}
+    </div>`;
+  }).join('');
 }
 function openStepModal(entry=null){
   editingStepId=entry?entry.id:null;
@@ -4106,6 +4256,7 @@ async function saveStepEntry(){
   if((steps===null||steps<=0)&&km>0) steps=kmToSteps(km);
   if((km===null||km<=0)&&steps>0) km=stepsToKm(steps);
   const entry={date,time,steps:Math.round(steps),km:parseFloat(km.toFixed(2)),note};
+  ensureStepGoalForDate(date);
   setSyncState('syncing');
   if(stepEntriesUseSupabase&&currentUser){
     const dbEntry={...entry,user_id:currentUser.id};
