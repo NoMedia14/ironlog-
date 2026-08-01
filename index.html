@@ -167,6 +167,23 @@
     .plan-ex-item.drag-over{border-top:2px solid var(--accent3);opacity:.7;}
     .plan-ex-item{display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);}
     .plan-ex-item:last-child{border-bottom:none;}
+    .mode-switch{display:inline-flex;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;}
+    .mode-switch .fbtn{border:none;border-radius:7px;}
+    .plan-mode-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;}
+    .plan-mode-note{font-size:11px;color:var(--muted);line-height:1.45;}
+    .plan-ex-grid{display:grid;grid-template-columns:20px 20px minmax(130px,1fr) 62px 70px 28px;gap:6px;align-items:end;width:100%;}
+    .plan-ex-grid.cali{grid-template-columns:20px 20px minmax(130px,1fr) 92px 78px 28px;}
+    .cali-plan-row{padding:10px 0;border-top:1px solid var(--border);}
+    .cali-plan-row:first-child{border-top:none;}
+    .cali-plan-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .cali-progress{height:6px;background:var(--surface);border-radius:999px;overflow:hidden;margin:7px 0 5px;}
+    .cali-progress-fill{height:100%;background:var(--accent4);border-radius:inherit;transition:width .2s ease;}
+    .cali-adjust{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+    .cali-cycle-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+    .cali-workout-summary{padding:12px 14px;margin:0 0 12px;background:rgba(71,255,184,.06);border:1px solid rgba(71,255,184,.18);border-radius:8px;}
+    .cali-rep-row{display:grid;grid-template-columns:32px 1fr 34px;gap:8px;align-items:center;margin-bottom:8px;}
+    .cali-rep-row input{text-align:center;}
+    .cali-target-badge{font-size:11px;font-weight:800;color:var(--accent4);white-space:nowrap;}
 
     /* ACTIVE WORKOUT */
     .active-workout{background:var(--card);border:2px solid var(--accent3);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
@@ -601,6 +618,14 @@
       .aw-actions{justify-content:stretch;}
       .aw-actions .btn{flex:1;}
       .fab{width:58px;height:58px;}
+      .plan-mode-bar{align-items:flex-start;flex-direction:column;}
+      .plan-ex-grid,.plan-ex-grid.cali{grid-template-columns:20px 20px minmax(0,1fr) 28px;}
+      .plan-ex-grid .plan-field-name{grid-column:3;}
+      .plan-ex-grid .plan-field-secondary{grid-column:3;}
+      .plan-ex-grid .plan-field-tertiary{grid-column:3;}
+      .plan-ex-grid .del-set{grid-column:4;grid-row:1;margin-bottom:2px!important;}
+      .cali-plan-top{align-items:flex-start;}
+      .cali-adjust{flex-wrap:wrap;justify-content:flex-end;}
     }
     @media(prefers-reduced-motion:reduce){
       *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important;}
@@ -735,11 +760,17 @@
 
     <!-- STATS -->
     <div id="view-stats" class="view">
+      <div class="plan-mode-bar">
+        <div class="mode-switch" aria-label="Trainingsmodus">
+          <button class="fbtn stats-training-mode active" onclick="setStatsTrainingMode('classic',this)">Klassik</button>
+          <button class="fbtn stats-training-mode" onclick="setStatsTrainingMode('calisthenics',this)">Calisthenics</button>
+        </div>
+      </div>
       <div class="stats-grid" id="stats-grid"></div>
       <div class="chart-wrap">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
           <div class="chart-title" style="margin-bottom:0;">FORTSCHRITT</div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;" id="classic-stat-modes">
             <button class="fbtn stat-mode active" id="smode-kg" onclick="setStatMode('kg',this)">Max. KG</button>
             <button class="fbtn stat-mode" id="smode-vol" onclick="setStatMode('vol',this)">Volumen</button>
           </div>
@@ -1164,7 +1195,19 @@
       <div class="modal-title" id="plan-modal-ttl">NEUER PLAN</div>
       <button class="close-btn" onclick="closeModal('modal-plan')">✕</button>
     </div>
+    <div class="field">
+      <label>Trainingsmodus</label>
+      <div class="mode-switch" style="width:100%;">
+        <button class="fbtn active" id="p-mode-classic" style="flex:1;" onclick="setPlanEditorMode('classic')">Klassik</button>
+        <button class="fbtn" id="p-mode-cali" style="flex:1;" onclick="setPlanEditorMode('calisthenics')">Calisthenics</button>
+      </div>
+    </div>
     <div class="field"><label>Planname</label><input type="text" id="p-name" placeholder="z.B. Push A …"></div>
+    <div class="field" id="p-cali-start-wrap" style="display:none;">
+      <label>Erster 7-Tage-Zeitraum ab</label>
+      <input type="date" id="p-cali-start">
+      <div class="plan-mode-note" style="margin-top:6px;">Das Wochenziel startet an diesem Datum und wird danach automatisch alle 7 Tage zurückgesetzt.</div>
+    </div>
     <div class="divider"></div>
     <div id="p-ex-container"></div>
     <button class="btn btn-ghost" style="width:100%;margin-bottom:16px;" onclick="addPlanEx()">+ Übung hinzufügen</button>
@@ -1531,18 +1574,78 @@ let activeTab='log';
 let pChartI=null, wkChartI=null, wtChartI=null, bpChartI=null;
 let currentWMetric='weight', currentBPView='both', showWeightRaw=true;
 let exCounter=0, setCounters={}, planExCounter=0, awSetCounters={};
+let editingPlanMode='classic', planListMode='classic', statsTrainingMode='classic';
 let timerRunning=false, timerSecs=0, timerTarget=null, timerStart=null, timerInterval=null, timerMinimized=false;
 let appReady=false;
 let stepEntriesUseSupabase=false;
+let trainingModeSaveTimer=null, trainingModeSaveVersion=0;
 
 const g = id => document.getElementById(id);
 const STEPS_PER_KM = 1650;
+const TRAINING_MODE_KEY = 'ironlog_training_mode';
 const GROUP_ARROW_OPEN = '▾';
 const GROUP_ARROW_CLOSED = '▸';
 function today(){ return new Date().toISOString().split('T')[0]; }
 function nowTime(){ const n=new Date(); return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); }
 function fmtD(ds,opts){ return new Date(ds+'T12:00:00').toLocaleDateString('de-DE',opts); }
 function fmtShort(ds){ return fmtD(ds,{day:'2-digit',month:'short'}); }
+function addDays(ds,days){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+function planMode(plan){ return (plan?.exercises||[]).some(ex=>ex.trainingMode==='calisthenics'||ex.weeklyReps!==undefined)?'calisthenics':'classic'; }
+function exerciseTrainingMode(ex){ return ex?.trainingMode==='calisthenics'?'calisthenics':'classic'; }
+function caliCycle(startDate,forDate=today()){
+  const start=dateKey(startDate||forDate), current=dateKey(forDate);
+  const startMs=new Date(start+'T12:00:00').getTime(), currentMs=new Date(current+'T12:00:00').getTime();
+  const dayDiff=Math.floor((currentMs-startMs)/86400000);
+  if(dayDiff<0) return {start,end:addDays(start,6),index:0,pending:true};
+  const index=Math.floor(dayDiff/7), cycleStart=addDays(start,index*7);
+  return {start:cycleStart,end:addDays(cycleStart,6),index,pending:false};
+}
+function caliExerciseConfig(name){
+  for(const plan of plans.filter(p=>!p.archived&&planMode(p)==='calisthenics')){
+    const ex=(plan.exercises||[]).find(item=>item.name===name&&exerciseTrainingMode(item)==='calisthenics');
+    if(ex)return ex;
+  }
+  return null;
+}
+function caliRepsInRange(name,start,end){
+  return sessions.filter(s=>dateKey(s.date)>=start&&dateKey(s.date)<=end).reduce((total,s)=>total+(s.exercises||[]).reduce((sum,ex)=>{
+    if(ex.name!==name||exerciseTrainingMode(ex)!=='calisthenics')return sum;
+    return sum+(ex.sets||[]).reduce((a,set)=>a+(parseInt(set.reps,10)||0),0);
+  },0),0);
+}
+function validTrainingMode(mode){ return mode==='calisthenics'?'calisthenics':'classic'; }
+function syncTrainingModeButtons(){
+  document.querySelectorAll('.stats-training-mode').forEach((btn,index)=>btn.classList.toggle('active',(index===0&&statsTrainingMode==='classic')||(index===1&&statsTrainingMode==='calisthenics')));
+}
+function applyTrainingMode(mode,rerender=false){
+  mode=validTrainingMode(mode);
+  planListMode=mode;
+  statsTrainingMode=mode;
+  syncTrainingModeButtons();
+  if(rerender&&activeTab==='plans')renderPlans();
+  if(rerender&&activeTab==='stats')renderStats();
+}
+function restoreTrainingMode(rerender=false){
+  const cloudMode=currentUser?.user_metadata?.ironlog_training_mode;
+  const localMode=localStorage.getItem(TRAINING_MODE_KEY);
+  applyTrainingMode(cloudMode||localMode||'classic',rerender);
+}
+function persistTrainingMode(mode){
+  mode=validTrainingMode(mode);
+  localStorage.setItem(TRAINING_MODE_KEY,mode);
+  if(currentUser)currentUser={...currentUser,user_metadata:{...(currentUser.user_metadata||{}),ironlog_training_mode:mode}};
+  const version=++trainingModeSaveVersion;
+  clearTimeout(trainingModeSaveTimer);
+  trainingModeSaveTimer=setTimeout(async()=>{
+    if(!currentUser||version!==trainingModeSaveVersion)return;
+    setSyncState('syncing');
+    const{data,error}=await sb.auth.updateUser({data:{ironlog_training_mode:mode}});
+    if(version!==trainingModeSaveVersion)return;
+    if(error){setSyncState('error');showToast('Modus konnte nur auf diesem Gerät gespeichert werden.',true);return;}
+    if(data?.user)currentUser=data.user;
+    setSyncState('ok');
+  },300);
+}
 function weekMon(ds){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()-((d.getDay()+2)%7)); return d.toISOString().split('T')[0]; } // groups by Friday
 function weekLabel(ds){ return fmtD(weekMon(ds),{day:'2-digit',month:'short'}); }
 function monthKey(ds){ return ds.substring(0,7); }
@@ -1654,6 +1757,11 @@ async function showApp(session){
   currentUser=session.user;
   showScreen('loading');
   try{
+    try{
+      const{data:userData}=await sb.auth.getUser();
+      if(userData?.user)currentUser=userData.user;
+    }catch(e){}
+    restoreTrainingMode();
     await loadProfile();
     await loadAllData();
   }catch(e){ console.error('Load error:',e); }
@@ -1707,6 +1815,7 @@ sb.auth.onAuthStateChange(async(event, session)=>{
   }
   if(event==='TOKEN_REFRESHED' && session){
     currentUser=session.user;
+    restoreTrainingMode(true);
   }
   // INITIAL_SESSION fires on page load if session exists - use it as backup
   if(event==='INITIAL_SESSION' && session && !appReady){
@@ -1716,12 +1825,16 @@ sb.auth.onAuthStateChange(async(event, session)=>{
 
 // PWA: re-check on foreground
 document.addEventListener('visibilitychange', async()=>{
-  if(document.visibilityState==='visible' && !appReady){
-    try{
+  if(document.visibilityState!=='visible')return;
+  try{
+    if(appReady&&currentUser){
+      const{data}=await sb.auth.getUser();
+      if(data?.user){currentUser=data.user;restoreTrainingMode(true);}
+    }else if(!appReady){
       const {data:{session}}=await sb.auth.getSession();
       if(session && !appReady) await showApp(session);
-    }catch(e){}
-  }
+    }
+  }catch(e){}
 });
 
 initApp();
@@ -2406,6 +2519,8 @@ function updateFab(){
   const f=g('main-fab');
   const cfg={log:'fab-yellow',plans:'fab-blue',weight:'fab-teal',steps:'fab-teal',bp:'fab-red',sleep:'fab-purple',mood:'fab-orange',habits:'fab-green'};
   if(!cfg[activeTab]){f.style.display='none';return;}
+  const workout=g('active-workout-wrap');
+  if(activeTab==='log'&&workout&&workout.style.display!=='none'&&workout.innerHTML.trim()){f.style.display='none';return;}
   f.style.display='flex'; f.className='fab '+cfg[activeTab]; f.textContent='＋';
 }
 function fabAction(){
@@ -2436,7 +2551,16 @@ function setTBtn(t){ g('timer-btn').textContent=t; g('timer-mini-btn').textConte
 function toggleTimerMin(){ timerMinimized=!timerMinimized; const sec=g('timer-section'),body=g('timer-body'),mr=g('timer-mini-row'),btn=sec.querySelector('.btn-xs'); if(timerMinimized){sec.classList.add('minimized');body.style.display='none';mr.style.display='flex';btn.textContent='▼ Max';}else{sec.classList.remove('minimized');body.style.display='block';mr.style.display='none';btn.textContent='▲ Min';} }
 
 // ── LOG ──
-function populateLogPlanSelect(){ const sel=g('log-plan-sel'); sel.innerHTML='<option value="">— Plan wählen —</option>'; plans.filter(p=>!p.archived).forEach(p=>sel.innerHTML+=`<option value="${p.id}">${p.name}</option>`); }
+function populateLogPlanSelect(){
+  const sel=g('log-plan-sel');
+  const active=plans.filter(p=>!p.archived);
+  const classic=active.filter(p=>planMode(p)==='classic');
+  const cali=active.filter(p=>planMode(p)==='calisthenics');
+  let html='<option value="">— Plan wählen —</option>';
+  if(classic.length)html+=`<optgroup label="Klassik">${classic.map(p=>`<option value="${p.id}">${htmlEscape(p.name)}</option>`).join('')}</optgroup>`;
+  if(cali.length)html+=`<optgroup label="Calisthenics · Wochenziele">${cali.map(p=>`<option value="${p.id}">${htmlEscape(p.name)}</option>`).join('')}</optgroup>`;
+  sel.innerHTML=html;
+}
 function startSelectedPlan(){ const pid=g('log-plan-sel').value; if(!pid){showToast('Bitte Plan auswählen.',true);return;} const plan=plans.find(p=>p.id===pid); if(plan) startWorkout(plan); }
 function openBlankSession(){
   startWorkout({name:'Leere Einheit',exercises:[]});
@@ -2444,7 +2568,116 @@ function openBlankSession(){
 }
 
 // ── ACTIVE WORKOUT ──
+function startCaliWorkout(plan){
+  awSetCounters={};
+  const exercises=(plan.exercises||[]).filter(ex=>exerciseTrainingMode(ex)==='calisthenics');
+  const wrap=g('active-workout-wrap');
+  wrap.style.display='block';
+  const blocks=exercises.map((ex,ei)=>{
+    const target=parseInt(ex.weeklyReps,10)||0;
+    const cycle=caliCycle(ex.startDate||today());
+    const completed=cycle.pending?0:caliRepsInRange(ex.name,cycle.start,cycle.end);
+    const remaining=Math.max(0,target-completed);
+    const pct=target?Math.min(100,Math.round(completed/target*100)):0;
+    awSetCounters['cali-'+ei]=1;
+    return `<div class="exercise-block cali-aw-block" id="cali-aw-ex-${ei}" data-ei="${ei}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--accent4);">${htmlEscape(ex.name)}</div>
+          <div class="cali-target-badge" id="cali-live-${ei}">${cycle.pending?`Start am ${fmtD(cycle.start,{day:'2-digit',month:'2-digit'})}`:`${remaining} von ${target} Reps offen`}</div>
+        </div>
+        <button class="btn btn-danger btn-xs" onclick="g('cali-aw-ex-${ei}').remove()" title="Für heute entfernen">✕</button>
+      </div>
+      <div class="cali-progress"><div class="cali-progress-fill" id="cali-live-bar-${ei}" style="width:${pct}%"></div></div>
+      <div class="cali-cycle-meta">
+        <span>${completed} erledigt · ${target} Ziel</span>
+        <span>${fmtD(cycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(cycle.end,{day:'2-digit',month:'2-digit'})}</span>
+      </div>
+      <div style="margin-top:12px;" id="cali-sets-${ei}">
+        <div class="cali-rep-row" id="cali-set-${ei}-0">
+          <div class="set-num">1</div>
+          <input type="number" min="0" inputmode="numeric" placeholder="Reps in diesem Satz" id="cali-rp-${ei}-0" ${cycle.pending?'disabled':''} oninput="updateCaliLiveProgress(${ei},${completed},${target})">
+          <button class="del-set" onclick="g('cali-set-${ei}-0').remove();updateCaliLiveProgress(${ei},${completed},${target})">✕</button>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-xs" style="width:100%;" ${cycle.pending?'disabled':''} onclick="addCaliSet(${ei},${completed},${target})">+ Satz</button>
+      <div class="field" style="margin-top:10px;margin-bottom:0;"><label>Bemerkung</label><textarea id="cali-rmk-${ei}" placeholder="Optional…" style="min-height:44px;resize:vertical;font-size:13px;"></textarea></div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML=`<div class="active-workout" style="border-color:rgba(71,255,184,.48);">
+    <div class="aw-header" onclick="toggleAWMin()" style="background:linear-gradient(90deg,rgba(71,255,184,.12),rgba(71,255,184,.03));">
+      <div><div class="aw-title" style="color:var(--accent4);">Calisthenics · ${htmlEscape(plan.name)}</div>
+        <div style="font-size:12px;color:var(--muted);">Flexible Wochenziele · nur ausgeführte Reps werden gespeichert</div></div>
+      <div style="font-size:20px;color:var(--accent4);" id="aw-arrow">▼</div>
+    </div>
+    <div class="aw-body open" id="aw-body">
+      <div style="padding:12px 16px 0;">
+        <div class="field" style="margin-bottom:10px;"><label>Name</label><input type="text" id="aw-name" value="${htmlEscape(plan.name)}"></div>
+        <div class="cali-workout-summary">Trage heute beliebig viele Sätze ein. Die Anzeige zieht alle bereits gespeicherten Calisthenics-Reps des aktuellen 7-Tage-Zeitraums ab.</div>
+      </div>
+      ${blocks||'<div class="empty"><div class="empty-text">Noch keine Wochenziele definiert.</div></div>'}
+    </div>
+    <div class="aw-actions">
+      <button class="btn btn-accent btn-sm" id="aw-save-btn" onclick="saveCaliWorkout('${plan.id}')">💾 Speichern</button>
+      <button class="btn btn-danger btn-sm" onclick="discardWorkout()">✕ Verwerfen</button>
+    </div>
+  </div>`;
+  updateFab();
+  wrap.scrollIntoView({behavior:'smooth'});
+}
+
+function addCaliSet(ei,completed,target){
+  const si=awSetCounters['cali-'+ei]||1;
+  awSetCounters['cali-'+ei]=si+1;
+  const row=document.createElement('div');
+  row.className='cali-rep-row'; row.id=`cali-set-${ei}-${si}`;
+  row.innerHTML=`<div class="set-num">${si+1}</div>
+    <input type="number" min="0" inputmode="numeric" placeholder="Reps in diesem Satz" id="cali-rp-${ei}-${si}" oninput="updateCaliLiveProgress(${ei},${completed},${target})">
+    <button class="del-set" onclick="g('cali-set-${ei}-${si}').remove();updateCaliLiveProgress(${ei},${completed},${target})">✕</button>`;
+  g('cali-sets-'+ei)?.appendChild(row);
+  g(`cali-rp-${ei}-${si}`)?.focus();
+}
+
+function updateCaliLiveProgress(ei,completed,target){
+  const todayReps=[...document.querySelectorAll(`#cali-sets-${ei} input`)].reduce((sum,input)=>sum+(parseInt(input.value,10)||0),0);
+  const total=completed+todayReps, remaining=Math.max(0,target-total);
+  const label=g('cali-live-'+ei), bar=g('cali-live-bar-'+ei);
+  if(label)label.textContent=remaining?`${remaining} von ${target} Reps offen`:`Wochenziel erreicht · ${total} Reps`;
+  if(bar)bar.style.width=(target?Math.min(100,total/target*100):0)+'%';
+}
+
+async function saveCaliWorkout(planId){
+  const plan=plans.find(p=>p.id===planId); if(!plan)return;
+  const btn=g('aw-save-btn'); if(btn){btn.disabled=true;btn.textContent='Speichert…';}
+  const exList=[];
+  (plan.exercises||[]).filter(ex=>exerciseTrainingMode(ex)==='calisthenics').forEach((ex,ei)=>{
+    if(!g('cali-aw-ex-'+ei))return;
+    const sets=[...document.querySelectorAll(`#cali-sets-${ei} input`)]
+      .map(input=>parseInt(input.value,10)||0).filter(reps=>reps>0).map(reps=>({kg:'',reps}));
+    if(!sets.length)return;
+    const cycle=caliCycle(ex.startDate||today());
+    exList.push({name:ex.name,sets,remark:g('cali-rmk-'+ei)?.value||'',trainingMode:'calisthenics',weeklyTarget:parseInt(ex.weeklyReps,10)||0,cycleStart:cycle.start});
+  });
+  if(!exList.length){showToast('Bitte mindestens eine Wiederholung eintragen.',true);if(btn){btn.disabled=false;btn.textContent='💾 Speichern';}return;}
+  setSyncState('syncing');
+  const name=g('aw-name')?.value.trim()||plan.name||'Calisthenics';
+  const{error}=await sb.from('sessions').insert({user_id:currentUser.id,date:today(),name,exercises:exList});
+  if(error){showToast('Fehler: '+error.message,true);setSyncState('error');if(btn){btn.disabled=false;btn.textContent='💾 Speichern';}return;}
+  await loadAllData();
+  wrapUpActiveWorkout();
+  renderLog();
+  showToast('Calisthenics-Reps gespeichert!');
+}
+
+function wrapUpActiveWorkout(){
+  g('active-workout-wrap').style.display='none';
+  g('active-workout-wrap').innerHTML='';
+  awSetCounters={};
+  updateFab();
+}
+
 function startWorkout(plan){
+  if(planMode(plan)==='calisthenics'){startCaliWorkout(plan);return;}
   awSetCounters={};
   const exercises=(plan.exercises||[]).map((ex,i)=>({id:i,name:ex.name,defaultSets:ex.defaultSets||3,defaultReps:ex.defaultReps||0}));
   
@@ -2518,6 +2751,7 @@ function startWorkout(plan){
       <button class="btn btn-danger btn-sm" onclick="discardWorkout()">✕ Verwerfen</button>
     </div>
   </div>`;
+  updateFab();
   wrap.scrollIntoView({behavior:'smooth'});
   setTimeout(initAWInputStyles, 50);
 }
@@ -2678,7 +2912,7 @@ async function saveActiveWorkout(exercises){
       const parts=row.id.split('-'); const si=parts[parts.length-1];
       sets.push({kg:g(`aw-kg-${ei}-${si}`)?.value||'',reps:g(`aw-rp-${ei}-${si}`)?.value||''});
     });
-    exList.push({name:ex.name,sets,remark:g(`aw-rmk-${ei}`)?.value||''});
+    exList.push({name:ex.name,sets,remark:g(`aw-rmk-${ei}`)?.value||'',trainingMode:'classic'});
   });
   // Collect extra exercises added during workout
   document.querySelectorAll('#aw-extra-exercises .aw-extra-block').forEach(block=>{
@@ -2689,7 +2923,7 @@ async function saveActiveWorkout(exercises){
       const parts=row.id.split('-'); const si=parts[parts.length-1];
       sets.push({kg:g(`aw-kg-${ei}-${si}`)?.value||'',reps:g(`aw-rp-${ei}-${si}`)?.value||''});
     });
-    exList.push({name,sets,remark:g('aw-xrmk-'+ei)?.value||''});
+    exList.push({name,sets,remark:g('aw-xrmk-'+ei)?.value||'',trainingMode:'classic'});
   });
   if(!exList.length){
     showToast('Bitte mindestens eine Übung eintragen.',true);
@@ -2700,11 +2934,11 @@ async function saveActiveWorkout(exercises){
   const{error}=await sb.from('sessions').insert({user_id:currentUser.id,date:today(),name,exercises:exList});
   if(error){showToast('Fehler: '+error.message,true);setSyncState('error');if(btn){btn.disabled=false;btn.textContent='💾 Speichern';}return;}
   await loadAllData();
-  g('active-workout-wrap').style.display='none'; g('active-workout-wrap').innerHTML=''; awSetCounters={};
+  wrapUpActiveWorkout();
   renderLog();
   showToast('Einheit gespeichert!');
 }
-function discardWorkout(){ if(!confirm('Training verwerfen?'))return; g('active-workout-wrap').style.display='none'; g('active-workout-wrap').innerHTML=''; awSetCounters={}; }
+function discardWorkout(){ if(!confirm('Training verwerfen?'))return; wrapUpActiveWorkout(); }
 
 // ── LOG LIST ──
 function renderLog(){
@@ -2814,7 +3048,8 @@ async function saveSession(){
   const date=g('s-date').value,name=g('s-name').value.trim();
   if(!date){alert('Bitte Datum angeben.');return;}
   const exercises=[];
-  document.querySelectorAll('#ex-container .exercise-block').forEach(block=>{
+  const originalSession=sessions.find(s=>s.id===_editingSessionId);
+  document.querySelectorAll('#ex-container .exercise-block').forEach((block,index)=>{
     const exId=block.id.replace('ex-','');
     const exName=g('ex-n-'+exId)?.value.trim(); if(!exName)return;
     const remark=g('ex-r-'+exId)?.value.trim()||'';
@@ -2823,7 +3058,11 @@ async function saveSession(){
       const sn=row.id.replace(`sr-${exId}-`,'');
       sets.push({kg:g(`kg-${exId}-${sn}`)?.value||'',reps:g(`rp-${exId}-${sn}`)?.value||''});
     });
-    exercises.push({name:exName,sets,remark});
+    const originalEx=originalSession?.exercises?.[index];
+    const modeMeta=originalEx&&exerciseTrainingMode(originalEx)==='calisthenics'
+      ?{trainingMode:'calisthenics',weeklyTarget:originalEx.weeklyTarget,cycleStart:originalEx.cycleStart}
+      :{trainingMode:'classic'};
+    exercises.push({name:exName,sets,remark,...modeMeta});
   });
   if(!exercises.length){alert('Mindestens eine Übung.');return;}
   setSyncState('syncing');
@@ -2834,9 +3073,10 @@ async function saveSession(){
     ({error}=await sb.from('sessions').insert({user_id:currentUser.id,date,name,exercises}));
   }
   if(error){showToast('Fehler: '+error.message,true);setSyncState('error');return;}
+  const wasEditing=!!_editingSessionId;
   _editingSessionId=null;
   await loadAllData(); closeModal('modal-session'); renderLog(); if(activeTab==='stats')renderStats();
-  showToast(_editingSessionId?'Einheit aktualisiert!':'Einheit gespeichert!');
+  showToast(wasEditing?'Einheit aktualisiert!':'Einheit gespeichert!');
 }
 
 // ── DETAIL ──
@@ -2846,10 +3086,10 @@ function openDetail(id){
   g('d-title').textContent=s.name||'Training';
   g('d-sub').textContent=fmtD(s.date,{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   g('d-content').innerHTML=(s.exercises||[]).map(ex=>`<div class="detail-exercise">
-    <div class="detail-exercise-name">${ex.name}</div>
+    <div class="detail-exercise-name">${htmlEscape(ex.name)}${exerciseTrainingMode(ex)==='calisthenics'?'<span style="font-family:DM Sans,sans-serif;font-size:10px;letter-spacing:0;color:var(--accent4);margin-left:8px;">CALISTHENICS</span>':''}</div>
     <div class="detail-sets">${(ex.sets||[]).map((st,i)=>`<div class="detail-set">
       <div style="font-size:10px;color:var(--muted);">SET ${i+1}</div>
-      <div style="font-size:18px;font-weight:700;">${st.kg||'—'}</div><div style="font-size:10px;color:var(--muted);">kg</div>
+      ${exerciseTrainingMode(ex)==='classic'?`<div style="font-size:18px;font-weight:700;">${st.kg||'—'}</div><div style="font-size:10px;color:var(--muted);">kg</div>`:''}
       <div style="font-size:12px;margin-top:4px;">${st.reps||'—'} <span style="font-size:10px;color:var(--muted)">reps</span></div>
       ${st.pause?`<div style="font-size:10px;color:var(--muted);margin-top:2px">⏱ ${st.pause}</div>`:''}
       ${st.remark?`<div style="font-size:10px;color:var(--muted);margin-top:2px">💬 ${st.remark}</div>`:''}
@@ -2891,14 +3131,50 @@ async function deleteCurrentSession(){
 // ── PLANS ──
 function renderPlans(){
   const el=g('plans-list');
-  if(!plans.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📌</div><div class="empty-text">Noch keine Pläne.<br>Tippe auf + um einen zu erstellen.</div></div>`;return;}
-  const active=plans.filter(p=>!p.archived);
-  const archived=plans.filter(p=>p.archived);
+  const modeBar=`<div class="plan-mode-bar">
+    <div class="mode-switch">
+      <button class="fbtn ${planListMode==='classic'?'active':''}" onclick="setPlanListMode('classic')">Klassik</button>
+      <button class="fbtn ${planListMode==='calisthenics'?'active':''}" onclick="setPlanListMode('calisthenics')">Calisthenics</button>
+    </div>
+    <div class="plan-mode-note">${planListMode==='calisthenics'?'Flexible Ziele je 7-Tage-Zeitraum':'Feste Übungen, Sätze und Wiederholungen'}</div>
+  </div>`;
+  const modePlans=plans.filter(p=>planMode(p)===planListMode);
+  if(!modePlans.length){el.innerHTML=modeBar+`<div class="empty"><div class="empty-icon">📌</div><div class="empty-text">Noch keine ${planListMode==='calisthenics'?'Calisthenics-Ziele':'klassischen Pläne'}.<br>Tippe auf + um einen zu erstellen.</div></div>`;return;}
+  const active=modePlans.filter(p=>!p.archived);
+  const archived=modePlans.filter(p=>p.archived);
   const cardHTML=p=>{
+    if(planMode(p)==='calisthenics'){
+      const exRows=(p.exercises||[]).map((ex,i)=>{
+        const target=parseInt(ex.weeklyReps,10)||0, pct=parseFloat(ex.progressionPct)||5;
+        const cycle=caliCycle(ex.startDate||today());
+        const done=cycle.pending?0:caliRepsInRange(ex.name,cycle.start,cycle.end);
+        const remaining=Math.max(0,target-done), progress=target?Math.min(100,done/target*100):0;
+        return `<div class="cali-plan-row">
+          <div class="cali-plan-top">
+            <div><strong style="font-size:13px;">${htmlEscape(ex.name)}</strong><div class="cali-target-badge">${cycle.pending?`Start ${fmtD(cycle.start,{day:'2-digit',month:'2-digit',year:'numeric'})}`:`${remaining} Reps offen`}</div></div>
+            ${p.archived?'':`<div class="cali-adjust"><button class="btn btn-ghost btn-xs" onclick="adjustCaliWeeklyTarget('${p.id}',${i},-1)">−${pct}%</button><span style="font-size:12px;font-weight:800;min-width:64px;text-align:center;">${target}/Woche</span><button class="btn btn-ghost btn-xs" onclick="adjustCaliWeeklyTarget('${p.id}',${i},1)">+${pct}%</button></div>`}
+          </div>
+          <div class="cali-progress"><div class="cali-progress-fill" style="width:${progress}%"></div></div>
+          <div class="cali-cycle-meta"><span>${done} von ${target} Reps</span><span>${fmtD(cycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(cycle.end,{day:'2-digit',month:'2-digit'})}</span></div>
+        </div>`;
+      }).join('');
+      const total=(p.exercises||[]).reduce((sum,ex)=>sum+(parseInt(ex.weeklyReps,10)||0),0);
+      return `<div class="plan-card${p.archived?' plan-archived':''}">
+        <div class="plan-head"><div class="plan-name" style="color:var(--accent4);">${htmlEscape(p.name)}${p.archived?'<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px;">ARCHIVIERT</span>':''}</div><div class="plan-set-badge" style="color:var(--accent4);">${total} Reps/Woche</div></div>
+        <div>${exRows}</div>
+        <div class="plan-actions" style="margin-top:10px;">
+          ${!p.archived?`<button class="btn btn-teal btn-sm" onclick="startPlanFromPlans('${p.id}')">▶ Starten</button>`:''}
+          <button class="btn btn-ghost btn-sm" onclick="editPlan('${p.id}')">✏️</button>
+          <button class="btn btn-ghost btn-sm" onclick="duplicatePlan('${p.id}')" title="Duplizieren">⧉</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleArchivePlan('${p.id}',${!p.archived})">${p.archived?'↩ Reaktivieren':'📦 Archiv'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePlan('${p.id}')">🗑</button>
+        </div>
+      </div>`;
+    }
     const setTotal=(p.exercises||[]).reduce((sum,e)=>sum+(parseInt(e.defaultSets)||0),0);
     return `<div class="plan-card${p.archived?' plan-archived':''}">
-    <div class="plan-head"><div class="plan-name">${p.name}${p.archived?'<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px;">ARCHIVIERT</span>':''}</div><div class="plan-set-badge">${setTotal} Sätze</div></div>
-    <div class="plan-ex-list">${(p.exercises||[]).map((e,i)=>`${i+1}. ${e.name} <span style="color:var(--muted)">(${e.defaultSets} Sets × ${e.defaultReps||'?'} Wdh.)</span>`).join(' · ')}</div>
+    <div class="plan-head"><div class="plan-name">${htmlEscape(p.name)}${p.archived?'<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px;">ARCHIVIERT</span>':''}</div><div class="plan-set-badge">${setTotal} Sätze</div></div>
+    <div class="plan-ex-list">${(p.exercises||[]).map((e,i)=>`${i+1}. ${htmlEscape(e.name)} <span style="color:var(--muted)">(${e.defaultSets} Sets × ${e.defaultReps||'?'} Wdh.)</span>`).join(' · ')}</div>
     <div class="plan-actions">
       ${!p.archived?`<button class="btn btn-blue btn-sm" onclick="startPlanFromPlans('${p.id}')">▶ Starten</button>`:''}
       <button class="btn btn-ghost btn-sm" onclick="editPlan('${p.id}')">✏️</button>
@@ -2907,7 +3183,7 @@ function renderPlans(){
       <button class="btn btn-danger btn-sm" onclick="deletePlan('${p.id}')">🗑</button>
     </div>
   </div>`};
-  let html=active.map(cardHTML).join('');
+  let html=modeBar+active.map(cardHTML).join('');
   if(archived.length){
     html+=`<div class="year-group" id="plan-archive-group">
       <div class="year-header" onclick="toggleYearGroup('plan-archive-group')" style="margin-top:12px;">
@@ -2922,20 +3198,41 @@ function renderPlans(){
   }
   el.innerHTML=html;
 }
+function setPlanListMode(mode){
+  applyTrainingMode(mode);
+  renderPlans();
+  persistTrainingMode(mode);
+}
 function openNewPlan(){
   editingPlanId=null; planExCounter=0;
+  editingPlanMode=planListMode;
   g('p-name').value='';
+  g('p-cali-start').value=today();
   g('plan-modal-ttl').textContent='NEUER PLAN';
-  renderPlanExerciseEditor([{name:'',defaultSets:3,defaultReps:10}]);
+  setPlanEditorMode(editingPlanMode,false);
+  renderPlanExerciseEditor([editingPlanMode==='calisthenics'?{name:'',trainingMode:'calisthenics',weeklyReps:100,progressionPct:5,startDate:today()}:{name:'',defaultSets:3,defaultReps:10}]);
   g('modal-plan').classList.add('open');
 }
 function editPlan(id){
   const plan=plans.find(p=>p.id===id); if(!plan)return;
   editingPlanId=id; planExCounter=0;
+  editingPlanMode=planMode(plan);
   g('p-name').value=plan.name;
+  g('p-cali-start').value=(plan.exercises||[]).find(ex=>ex.startDate)?.startDate||today();
   g('plan-modal-ttl').textContent='PLAN BEARBEITEN';
+  setPlanEditorMode(editingPlanMode,false);
   renderPlanExerciseEditor(plan.exercises||[]);
   g('modal-plan').classList.add('open');
+}
+function setPlanEditorMode(mode,refresh=true){
+  editingPlanMode=mode;
+  g('p-mode-classic')?.classList.toggle('active',mode==='classic');
+  g('p-mode-cali')?.classList.toggle('active',mode==='calisthenics');
+  if(g('p-cali-start-wrap'))g('p-cali-start-wrap').style.display=mode==='calisthenics'?'':'none';
+  document.querySelectorAll('.classic-plan-field').forEach(el=>el.style.display=mode==='classic'?'':'none');
+  document.querySelectorAll('.cali-plan-field').forEach(el=>el.style.display=mode==='calisthenics'?'':'none');
+  document.querySelectorAll('.plan-ex-grid').forEach(el=>el.classList.toggle('cali',mode==='calisthenics'));
+  if(refresh)updatePexNums();
 }
 function renderPlanExerciseEditor(exercises=[]){
   const con=g('p-ex-container'); if(!con)return;
@@ -2943,35 +3240,45 @@ function renderPlanExerciseEditor(exercises=[]){
   planExCounter=0;
   const frag=document.createDocumentFragment();
   (exercises.length?exercises:[{name:'',defaultSets:3,defaultReps:10}]).forEach(ex=>{
-    frag.appendChild(createPlanExElement(ex.name||'',ex.defaultSets||3,ex.defaultReps||10));
+    frag.appendChild(createPlanExElement(ex));
   });
   con.appendChild(frag);
+  setPlanEditorMode(editingPlanMode,false);
   updatePexNums();
 }
-function addPlanEx(name='',sets=3,reps=10){
+function addPlanEx(){
   const con=g('p-ex-container'); if(!con)return;
-  con.appendChild(createPlanExElement(name,sets,reps));
+  con.appendChild(createPlanExElement(editingPlanMode==='calisthenics'?{name:'',trainingMode:'calisthenics',weeklyReps:100,progressionPct:5}:{name:'',defaultSets:3,defaultReps:10}));
+  setPlanEditorMode(editingPlanMode,false);
   updatePexNums();
 }
-function createPlanExElement(name='',sets=3,reps=10){
+function createPlanExElement(ex={}){
   const id=++planExCounter;
   const d=document.createElement('div'); d.className='plan-ex-item'; d.id='pex-'+id;
   d.draggable=true;
   d.innerHTML=`
-    <div style="display:grid;grid-template-columns:20px 20px 1fr 62px 62px 28px;gap:6px;align-items:end;width:100%;">
+    <div class="plan-ex-grid ${editingPlanMode==='calisthenics'?'cali':''}">
       <span class="drag-handle" style="font-size:16px;color:var(--muted);padding-bottom:9px;cursor:grab;touch-action:none;" title="Ziehen zum Sortieren">⠿</span>
       <span class="pex-num" style="font-size:11px;color:var(--muted);padding-bottom:11px;"></span>
-      <div>
+      <div class="plan-field-name">
         <label style="font-size:10px;margin-bottom:3px;">Übungsname</label>
-        <input type="text" placeholder="z.B. Bankdrücken" id="pex-n-${id}" value="${htmlEscape(name)}">
+        <input type="text" placeholder="z.B. Klimmzüge" id="pex-n-${id}" value="${htmlEscape(ex.name||'')}">
       </div>
-      <div>
+      <div class="classic-plan-field plan-field-secondary">
         <label style="font-size:10px;margin-bottom:3px;">Sets</label>
-        <input type="number" id="pex-s-${id}" value="${htmlEscape(sets)}" min="1" max="20" style="text-align:center;">
+        <input type="number" id="pex-s-${id}" value="${htmlEscape(ex.defaultSets||3)}" min="1" max="20" style="text-align:center;">
       </div>
-      <div>
+      <div class="classic-plan-field plan-field-tertiary">
         <label style="font-size:10px;margin-bottom:3px;">Wdh.</label>
-        <input type="text" id="pex-r-${id}" value="${htmlEscape(reps)}" inputmode="numeric" pattern="[0-9\\-]*" placeholder="8-12" style="text-align:center;">
+        <input type="text" id="pex-r-${id}" value="${htmlEscape(ex.defaultReps||10)}" inputmode="numeric" pattern="[0-9\\-]*" placeholder="8-12" style="text-align:center;">
+      </div>
+      <div class="cali-plan-field plan-field-secondary" style="display:none;">
+        <label style="font-size:10px;margin-bottom:3px;">Reps/Woche</label>
+        <input type="number" id="pex-w-${id}" value="${htmlEscape(ex.weeklyReps||100)}" min="1" inputmode="numeric" style="text-align:center;">
+      </div>
+      <div class="cali-plan-field plan-field-tertiary" style="display:none;">
+        <label style="font-size:10px;margin-bottom:3px;">Steigerung</label>
+        <div style="display:flex;gap:4px;align-items:center;"><input type="number" id="pex-p-${id}" value="${htmlEscape(ex.progressionPct||5)}" min="0.1" max="100" step="0.5" style="text-align:center;min-width:0;"><span style="font-size:12px;color:var(--muted);">%</span></div>
       </div>
       <button class="del-set" style="margin-bottom:2px;" onclick="document.getElementById('pex-${id}').remove();updatePexNums()">✕</button>
     </div>`;
@@ -3057,15 +3364,25 @@ async function savePlan(){
   const name=g('p-name').value.trim(); if(!name){alert('Bitte Planname eingeben.');return;}
   const exercises=[];
   let invalidReps=false;
+  const startDate=dateKey(g('p-cali-start')?.value||today());
+  if(editingPlanMode==='calisthenics'&&!startDate){alert('Bitte ein Startdatum wählen.');return;}
   document.querySelectorAll('[id^="pex-n-"]').forEach(inp=>{
     const id=inp.id.replace('pex-n-','');
     const n=inp.value.trim();
-    const s=parseInt(g('pex-s-'+id)?.value)||3;
-    const r=(g('pex-r-'+id)?.value||'10').trim().replace(/\s*-\s*/g,'-')||'10';
-    if(!/^\d+(-\d+)?$/.test(r)){ invalidReps=true; return; }
-    if(n) exercises.push({name:n,defaultSets:s,defaultReps:r});
+    if(!n)return;
+    if(editingPlanMode==='calisthenics'){
+      const weeklyReps=parseInt(g('pex-w-'+id)?.value,10)||0;
+      const progressionPct=parseFloat(g('pex-p-'+id)?.value)||5;
+      if(weeklyReps<1){invalidReps=true;return;}
+      exercises.push({name:n,trainingMode:'calisthenics',weeklyReps,startDate,progressionPct});
+    }else{
+      const s=parseInt(g('pex-s-'+id)?.value)||3;
+      const r=(g('pex-r-'+id)?.value||'10').trim().replace(/\s*-\s*/g,'-')||'10';
+      if(!/^\d+(-\d+)?$/.test(r)){invalidReps=true;return;}
+      exercises.push({name:n,defaultSets:s,defaultReps:r,trainingMode:'classic'});
+    }
   });
-  if(invalidReps){alert('Wiederholungen bitte als Zahl oder Range eingeben, z.B. 8 oder 8-12.');return;}
+  if(invalidReps){alert(editingPlanMode==='calisthenics'?'Bitte je Übung ein gültiges Wochenziel eingeben.':'Wiederholungen bitte als Zahl oder Range eingeben, z.B. 8 oder 8-12.');return;}
   if(!exercises.length){alert('Mindestens eine Übung.');return;}
   const saveBtn=g('plan-save-btn'); if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Speichert…';}
   setSyncState('syncing');
@@ -3078,6 +3395,20 @@ async function savePlan(){
   if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='💾 Plan speichern';}
   if(error){showToast('Fehler: '+error.message,true);setSyncState('error');return;}
   await loadAllData(); closeModal('modal-plan'); renderPlans(); populateLogPlanSelect(); showToast('Plan gespeichert!');
+}
+async function adjustCaliWeeklyTarget(planId,exerciseIndex,direction){
+  const plan=plans.find(p=>p.id===planId); if(!plan)return;
+  const exercises=(plan.exercises||[]).map(ex=>({...ex}));
+  const ex=exercises[exerciseIndex]; if(!ex)return;
+  const oldTarget=parseInt(ex.weeklyReps,10)||0, pct=parseFloat(ex.progressionPct)||5;
+  const factor=1+(direction*pct/100);
+  ex.weeklyReps=Math.max(1,Math.round(oldTarget*factor));
+  setSyncState('syncing');
+  const{error}=await sb.from('plans').update({exercises}).eq('id',planId).eq('user_id',currentUser.id);
+  if(error){showToast('Fehler: '+error.message,true);setSyncState('error');return;}
+  await loadAllData();
+  renderPlans(); populateLogPlanSelect();
+  showToast(`${ex.name}: ${oldTarget} → ${ex.weeklyReps} Reps/Woche`);
 }
 async function deletePlan(id){
   if(!confirm('Plan wirklich löschen?'))return;
@@ -3198,6 +3529,12 @@ function visibleExerciseNames(){
   const index=buildExerciseViewIndex();
   return [...index.keys()].filter(n=>exerciseVisibleInStats(n,index.get(n))).sort();
 }
+function visibleExerciseNamesForMode(mode){
+  const allowed=new Set();
+  sessions.forEach(s=>(s.exercises||[]).forEach(ex=>{if(ex.name&&exerciseTrainingMode(ex)===mode)allowed.add(ex.name);}));
+  if(mode==='calisthenics')plans.filter(p=>!p.archived&&planMode(p)==='calisthenics').forEach(p=>(p.exercises||[]).forEach(ex=>{if(ex.name)allowed.add(ex.name);}));
+  return visibleExerciseNames().filter(name=>allowed.has(name)).concat([...allowed].filter(name=>!buildExerciseViewIndex().has(name))).sort();
+}
 
 function resetExerciseFilter(){
   _exerciseViewRules={};
@@ -3300,15 +3637,24 @@ function renderExerciseFilterList(){
 
 
 function renderStats(){
-  const total=sessions.length,allEx=sessions.flatMap(s=>s.exercises||[]);
-  const totalSets=sessions.reduce((sum,s)=>sum+(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0),0);
-  const names=visibleExerciseNames();
+  const mode=statsTrainingMode;
+  const modeSessions=sessions.filter(s=>(s.exercises||[]).some(ex=>exerciseTrainingMode(ex)===mode));
+  const modeExercises=modeSessions.flatMap(s=>(s.exercises||[]).filter(ex=>exerciseTrainingMode(ex)===mode));
+  const total=modeSessions.length;
+  const totalSets=modeExercises.reduce((sum,e)=>sum+(e.sets||[]).length,0);
+  const totalReps=modeExercises.reduce((sum,e)=>sum+(e.sets||[]).reduce((a,set)=>a+(parseInt(set.reps,10)||0),0),0);
+  const names=visibleExerciseNamesForMode(mode);
   const unique=names.length;
-  g('stats-grid').innerHTML=`
+  g('stats-grid').innerHTML=mode==='calisthenics'?`
+    <div class="stat-box"><div class="stat-val">${total}</div><div class="stat-label">Cali-Einheiten</div></div>
+    <div class="stat-box"><div class="stat-val">${totalReps}</div><div class="stat-label">Reps gesamt</div></div>
+    <div class="stat-box"><div class="stat-val">${unique}</div><div class="stat-label">Übungen</div></div>
+    <div class="stat-box"><div class="stat-val">${total?Math.round(totalReps/total):0}</div><div class="stat-label">Reps/Einheit</div></div>`:`
     <div class="stat-box"><div class="stat-val">${total}</div><div class="stat-label">Einheiten</div></div>
     <div class="stat-box"><div class="stat-val">${totalSets}</div><div class="stat-label">Sets gesamt</div></div>
     <div class="stat-box"><div class="stat-val">${unique}</div><div class="stat-label">Übungen</div></div>
     <div class="stat-box"><div class="stat-val">${total?Math.round(totalSets/total):0}</div><div class="stat-label">Sets/Einheit</div></div>`;
+  if(g('classic-stat-modes'))g('classic-stat-modes').style.display=mode==='classic'?'flex':'none';
   const sel=g('chart-ex-sel');
   const prev=sel.value;
   sel.innerHTML=names.length?names.map(n=>`<option value="${htmlEscape(n)}">${htmlEscape(n)}</option>`):'<option>Keine Daten</option>';
@@ -3317,6 +3663,11 @@ function renderStats(){
 }
 let _statMode = 'kg';
 let _statsTimeFilter = 'all';
+function setStatsTrainingMode(mode,btn){
+  applyTrainingMode(mode);
+  renderStats();
+  persistTrainingMode(mode);
+}
 function setStatsTimeFilter(f, btn) {
   _statsTimeFilter = f;
   document.querySelectorAll('.stf').forEach(b=>b.classList.remove('active'));
@@ -3331,6 +3682,7 @@ function setStatMode(mode, btn) {
 }
 
 function updateProgressChart(){
+  if(statsTrainingMode==='calisthenics'){updateCaliProgressChart();return;}
   const exName = g('chart-ex-sel').value;
   const pts = [];
   const tbl = g('stats-last3');
@@ -3350,7 +3702,7 @@ function updateProgressChart(){
   }
   const allSessions = filteredSessions.sort((a,b)=>dateKey(a.date).localeCompare(dateKey(b.date)));
   allSessions.forEach(s=>(s.exercises||[]).forEach(ex=>{
-    if(ex.name===exName){
+    if(ex.name===exName&&exerciseTrainingMode(ex)==='classic'){
       const sets = ex.sets||[];
       const maxKg = Math.max(...sets.map(st=>parseFloat(st.kg)||0));
       const vol = sets.reduce((a,st)=>{
@@ -3402,6 +3754,55 @@ function updateProgressChart(){
       <th>Datum</th><th style="text-align:center;">Sets</th><th style="text-align:center;">Reps</th>
       <th style="text-align:center;">Max KG</th><th style="text-align:center;">Volumen</th>
     </tr></thead><tbody>${rows}</tbody></table>`;
+}
+function filterStatsSessions(list){
+  if(_statsTimeFilter==='all')return list;
+  const cutoff=new Date();
+  if(_statsTimeFilter==='14d')cutoff.setDate(cutoff.getDate()-14);
+  else cutoff.setMonth(cutoff.getMonth()-({'1m':1,'3m':3,'6m':6,'1y':12}[_statsTimeFilter]||0));
+  const cutStr=cutoff.toISOString().slice(0,10);
+  return list.filter(s=>dateKey(s.date)>=cutStr);
+}
+function updateCaliProgressChart(){
+  const exName=g('chart-ex-sel').value, tbl=g('stats-last3');
+  if(!exName||exName==='Keine Daten'){
+    if(pChartI)pChartI.destroy();
+    if(tbl)tbl.innerHTML='';
+    return;
+  }
+  const config=caliExerciseConfig(exName);
+  const grouped=new Map();
+  filterStatsSessions(visibleSessionsForExercise(exName)).forEach(s=>(s.exercises||[]).forEach(ex=>{
+    if(ex.name!==exName||exerciseTrainingMode(ex)!=='calisthenics')return;
+    const start=ex.cycleStart||caliCycle(config?.startDate||s.date,s.date).start;
+    const item=grouped.get(start)||{start,reps:0,target:parseInt(ex.weeklyTarget,10)||parseInt(config?.weeklyReps,10)||0};
+    item.reps+=(ex.sets||[]).reduce((sum,set)=>sum+(parseInt(set.reps,10)||0),0);
+    item.target=parseInt(ex.weeklyTarget,10)||item.target;
+    grouped.set(start,item);
+  }));
+  if(config){
+    const current=caliCycle(config.startDate||today());
+    const inFilter=_statsTimeFilter==='all'||filterStatsSessions([{date:current.start}]).length>0;
+    if(!current.pending&&inFilter&&!grouped.has(current.start))grouped.set(current.start,{start:current.start,reps:0,target:parseInt(config.weeklyReps,10)||0});
+  }
+  const pts=[...grouped.values()].sort((a,b)=>a.start.localeCompare(b.start));
+  if(pChartI)pChartI.destroy();
+  pChartI=new Chart(g('progressChart'),{type:'line',data:{
+    labels:pts.map(p=>fmtD(p.start,{day:'2-digit',month:'short'})),
+    datasets:[
+      {label:'Reps',data:pts.map(p=>p.reps),borderColor:'#47ffb8',backgroundColor:'rgba(71,255,184,.08)',pointBackgroundColor:'#47ffb8',pointRadius:5,tension:.25,fill:true},
+      {label:'Wochenziel',data:pts.map(p=>p.target),borderColor:'#e8ff47',borderDash:[6,5],pointRadius:2,tension:0,fill:false}
+    ]
+  },options:{plugins:{legend:{display:true,labels:{color:'#8a8aa0',boxWidth:10,boxHeight:10}}},scales:{x:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}},y:{beginAtZero:true,ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  if(!tbl)return;
+  const last=pts.slice(-6).reverse();
+  if(!last.length){tbl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:12px 0;">Noch keine Calisthenics-Reps gespeichert.</div>';return;}
+  const rows=last.map(p=>{
+    const percent=p.target?Math.round(p.reps/p.target*100):0;
+    return `<tr><td>${fmtD(p.start,{day:'2-digit',month:'short'})}</td><td style="text-align:center;font-weight:700;">${p.reps}</td><td style="text-align:center;">${p.target||'—'}</td><td style="text-align:center;color:${percent>=100?'var(--accent4)':'var(--muted)'};">${percent}%</td></tr>`;
+  }).join('');
+  tbl.innerHTML=`<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;letter-spacing:1px;">LETZTE 7-TAGE-ZEITRÄUME</div>
+    <table class="bp-table"><thead><tr><th>Start</th><th style="text-align:center;">Reps</th><th style="text-align:center;">Ziel</th><th style="text-align:center;">Erreicht</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function renderWeekChart(){
   const wc={}; sessions.forEach(s=>{const w=weekLabel(s.date);wc[w]=(wc[w]||0)+1;});
