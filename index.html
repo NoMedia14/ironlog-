@@ -172,8 +172,11 @@
     .mode-switch .fbtn{border:none;border-radius:7px;}
     .plan-mode-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;}
     .plan-mode-note{font-size:11px;color:var(--muted);line-height:1.45;}
+    .stats-mode-panel{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+    .stats-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;}
+    .stats-mode-switch .fbtn{min-height:42px;font-size:12px;font-weight:800;}
     .plan-ex-grid{display:grid;grid-template-columns:20px 20px minmax(130px,1fr) 62px 70px 28px;gap:6px;align-items:end;width:100%;}
-    .plan-ex-grid.cali{grid-template-columns:20px 20px minmax(130px,1fr) 92px 78px 28px;}
+    .plan-ex-grid.cali{grid-template-columns:20px 20px minmax(130px,1fr) 110px 28px;}
     .cali-plan-row{padding:10px 0;border-top:1px solid var(--border);}
     .cali-plan-row:first-child{border-top:none;}
     .cali-plan-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -255,7 +258,7 @@
     .step-week-total span{font-family:'DM Sans',sans-serif;font-size:13px;letter-spacing:0;color:var(--muted);font-weight:600;}
     .step-week-progress{height:12px;background:var(--surface);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin:14px 0 12px;}
     .step-week-progress-fill{height:100%;border-radius:inherit;background:var(--accent4);transition:width .25s ease;}
-    .step-week-metrics{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px;}
+    .step-week-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px;}
     .step-week-metric{padding:12px 10px;text-align:center;border-right:1px solid var(--border);}
     .step-week-metric:last-child{border-right:none;}
     .step-week-metric-val{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--text);}
@@ -645,7 +648,10 @@
       .cali-adjust{flex-wrap:wrap;justify-content:flex-end;}
       .step-week-head{align-items:flex-start;}
       .step-week-total{font-size:36px;}
+      .step-week-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
       .step-week-metric{padding:10px 5px;}
+      .step-week-metric:nth-child(2){border-right:none;}
+      .step-week-metric:nth-child(-n+2){border-bottom:1px solid var(--border);}
       .step-week-metric-val{font-size:20px;}
       .step-week-metric-label{font-size:8px;}
     }
@@ -782,8 +788,9 @@
 
     <!-- STATS -->
     <div id="view-stats" class="view">
-      <div class="plan-mode-bar">
-        <div class="mode-switch" aria-label="Trainingsmodus">
+      <div class="stats-mode-panel">
+        <div class="chart-title" style="margin-bottom:8px;">TRAININGSART</div>
+        <div class="mode-switch stats-mode-switch" aria-label="Trainingsart für Statistiken">
           <button class="fbtn stats-training-mode active" onclick="setStatsTrainingMode('classic',this)">Klassik</button>
           <button class="fbtn stats-training-mode" onclick="setStatsTrainingMode('calisthenics',this)">Calisthenics</button>
         </div>
@@ -1065,15 +1072,8 @@
           <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steps" min="0" max="50000" step="500" value="10000" oninput="calcMacros()"><span class="macro-unit">/ Tag</span></div>
         </div>
         <div class="macro-row">
-          <label class="macro-label">Schritte Steigung</label>
-          <div class="macro-duo-inputs">
-            <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steps-incline" min="0" max="50000" step="500" value="0" oninput="calcMacros()"><span class="macro-unit">Schritte</span></div>
-            <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-steigung" min="0" max="30" step="0.5" value="0" oninput="calcMacros()"><span class="macro-unit">%</span></div>
-          </div>
-        </div>
-        <div class="macro-row">
-          <label class="macro-label">Arbeitssätze</label>
-          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-saetze" min="0" max="300" step="1" value="20" oninput="calcMacros()"><span class="macro-unit">/ Woche</span></div>
+          <label class="macro-label">Reps</label>
+          <div class="macro-input-wrap"><input type="number" class="macro-input" id="mc-reps" min="0" max="10000" step="10" value="400" oninput="calcMacros()"><span class="macro-unit">/ Woche</span></div>
         </div>
         <div class="macro-row">
           <label class="macro-label">NEAT</label>
@@ -1100,7 +1100,7 @@
           <span class="macro-result-val accent3" id="mr-schritte">—</span>
         </div>
         <div class="macro-result-row">
-          <span class="macro-result-label">Krafttraining Ø/Tag aus Wochen-Sätzen</span>
+          <span class="macro-result-label">Krafttraining Ø/Tag aus Wochen-Reps</span>
           <span class="macro-result-val accent4" id="mr-training">—</span>
         </div>
         <div class="macro-result-row">
@@ -3377,10 +3377,7 @@ function createPlanExElement(ex={}){
         <label style="font-size:10px;margin-bottom:3px;">Reps/Woche</label>
         <input type="number" id="pex-w-${id}" value="${htmlEscape(ex.weeklyReps||100)}" min="1" inputmode="numeric" style="text-align:center;">
       </div>
-      <div class="cali-plan-field plan-field-tertiary" style="display:none;">
-        <label style="font-size:10px;margin-bottom:3px;">Steigerung</label>
-        <div style="display:flex;gap:4px;align-items:center;"><input type="number" id="pex-p-${id}" value="${htmlEscape(ex.progressionPct||5)}" min="0.1" max="100" step="0.5" style="text-align:center;min-width:0;"><span style="font-size:12px;color:var(--muted);">%</span></div>
-      </div>
+      <input type="hidden" id="pex-p-${id}" value="${htmlEscape(ex.progressionPct||5)}">
       <button class="del-set" style="margin-bottom:2px;" onclick="document.getElementById('pex-${id}').remove();updatePexNums()">✕</button>
     </div>`;
   initPlanDnD(d);
@@ -4175,11 +4172,13 @@ function renderCurrentStepWeek(){
   const el=g('steps-week-overview'); if(!el)return;
   const current=today(), weekStart=calendarWeekMonday(current), weekEnd=addDays(weekStart,6);
   const dailyMap=getDailyStepMap(), total=stepTotalForWeek(weekStart,dailyMap), todaySteps=dailyMap[current]||0;
+  const daysElapsed=Math.min(7,Math.max(1,Math.floor((new Date(current+'T12:00:00')-new Date(weekStart+'T12:00:00'))/86400000)+1));
+  const dailyAverage=Math.round(total/daysElapsed);
   const goal=ensureCurrentStepWeekGoal();
   if(!goal){
     el.innerHTML=`<div class="step-week-head"><div><div style="font-size:13px;font-weight:800;">Montag bis Sonntag</div><div class="step-week-range">${fmtD(weekStart,{day:'2-digit',month:'short'})} – ${fmtD(weekEnd,{day:'2-digit',month:'short',year:'numeric'})}</div></div><button class="btn btn-teal btn-sm" onclick="openStepGoalModal()">Ziel festlegen</button></div>
       <div style="padding:16px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"><div style="font-size:13px;font-weight:700;margin-bottom:4px;">Noch kein Wochenziel</div><div style="font-size:11px;color:var(--muted);">Lege einmal dein Ziel fest. Danach beginnt es jeden Montag automatisch neu.</div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:10px;">Heute: <strong style="color:var(--text);">${todaySteps.toLocaleString('de-DE')} Schritte</strong> · ${stepsToKm(todaySteps).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})} km</div>`;
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;"><span>Heute: <strong style="color:var(--text);">${todaySteps.toLocaleString('de-DE')} Schritte</strong></span><span>Ø bisher: <strong style="color:var(--text);">${dailyAverage.toLocaleString('de-DE')}</strong> pro Tag</span></div>`;
     return;
   }
   const remaining=Math.max(0,goal-total), endMs=new Date(weekEnd+'T12:00:00').getTime(), currentMs=new Date(current+'T12:00:00').getTime();
@@ -4195,6 +4194,7 @@ function renderCurrentStepWeek(){
       <div class="step-week-metric"><div class="step-week-metric-val" style="color:${remaining?'var(--accent)':'var(--accent4)'};">${remaining.toLocaleString('de-DE')}</div><div class="step-week-metric-label">Schritte fehlen</div></div>
       <div class="step-week-metric"><div class="step-week-metric-val">${daysLeft}</div><div class="step-week-metric-label">Tag${daysLeft!==1?'e':''} übrig</div></div>
       <div class="step-week-metric"><div class="step-week-metric-val">${perDay.toLocaleString('de-DE')}</div><div class="step-week-metric-label">Pro Tag nötig</div></div>
+      <div class="step-week-metric"><div class="step-week-metric-val" style="color:var(--accent3);">${dailyAverage.toLocaleString('de-DE')}</div><div class="step-week-metric-label">Ø pro Tag bisher</div></div>
     </div>
     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);"><span>Heute: <strong style="color:var(--text);">${todaySteps.toLocaleString('de-DE')}</strong> Schritte</span><span>${progress}% des Wochenziels</span></div>`;
 }
@@ -5513,8 +5513,8 @@ function normalizeMacroHeightInput(){
   el.value=macroHeightMeters(el.value).toFixed(2);
 }
 function macroKcal(v){ return `${Math.round(v)} kcal`; }
-function macroStepKcal(weight,height,steps,incline=0){
-  return (steps/1000)*weight*height*0.27*(1+(incline*0.065));
+function macroStepKcal(weight,height,steps){
+  return (steps/1000)*weight*height*0.27;
 }
 function macroNeatInfo(level,weight){
   const defs={
@@ -5525,10 +5525,10 @@ function macroNeatInfo(level,weight){
   const info=defs[level]||defs.mid;
   return {...info,kcal:weight*info.factor};
 }
-function macroCalcDay(weight,height,steps,stepsIncline,incline,sets,neatLevel='mid'){
+function macroCalcDay(weight,height,steps,weeklyReps,neatLevel='mid'){
   const ruhe=weight*22;
-  const schritte=macroStepKcal(weight,height,steps,0)+macroStepKcal(weight,height,stepsIncline,incline);
-  const training=sets*weight*0.11;
+  const schritte=macroStepKcal(weight,height,steps);
+  const training=(weeklyReps*.5)/7;
   const neat=macroNeatInfo(neatLevel,weight);
   const zwischen=ruhe+schritte+training+neat.kcal;
   const erhaltung=zwischen/0.90;
@@ -5538,14 +5538,11 @@ function calcMacros(){
   const weight=macroNum('mc-gewicht',90);
   const height=macroHeightMeters(g('mc-groesse')?.value||1.84);
   const steps=macroNum('mc-steps',10000);
-  const stepsIncline=macroNum('mc-steps-incline',0);
-  const incline=macroNum('mc-steigung',0);
-  const weeklySets=macroNum('mc-saetze',20);
-  const sets=weeklySets/7;
+  const weeklyReps=macroNum('mc-reps',400);
   const neatLevel=g('mc-neat')?.value||'mid';
   const adjust=macroNum('mc-kcal-adjust',0);
 
-  const day=macroCalcDay(weight,height,steps,stepsIncline,incline,sets,neatLevel);
+  const day=macroCalcDay(weight,height,steps,weeklyReps,neatLevel);
   g('mr-ruhe').textContent=macroKcal(day.ruhe);
   g('mr-schritte').textContent=macroKcal(day.schritte);
   g('mr-training').textContent=macroKcal(day.training);
@@ -5569,7 +5566,7 @@ function calcMacros(){
   g('mr-week-balance').textContent=weekBalance===0?'0 kcal/Woche':`${weekBalance>0?'+':''}${Math.round(weekBalance)} kcal/Woche`;
   g('mr-week-balance').className='macro-result-val '+(weekBalance>0?'accent2':weekBalance<0?'accent3':'accent4');
   g('mr-week-note').textContent=weekBalance===0
-    ? `${day.neat.label}-NEAT ist eingerechnet. Arbeitssätze werden als Wochenwert gleichmäßig verteilt.`
+    ? `${day.neat.label}-NEAT ist eingerechnet. ${Math.round(weeklyReps)} Reps/Woche zählen mit 0,5 kcal je Rep.`
     : `${day.neat.label}-NEAT eingerechnet. ${weekBalance<0?'Theoretischer Fettverlust':'Theoretischer Fettaufbau'}: ca. ${fatKg.toFixed(2).replace('.',',')} kg/Woche bei 7.000 kcal pro kg Fett.`;
   const setBar=(id,val,color)=>{
     const el=g(id); if(!el)return;
@@ -5593,9 +5590,7 @@ function prefillMacrosFromData(){
       if(g('mc-gewicht'))g('mc-gewicht').value=d.gewicht||90;
       if(g('mc-groesse'))g('mc-groesse').value=macroHeightMeters(d.groesse||1.84).toFixed(2);
       if(g('mc-steps'))g('mc-steps').value=d.steps||10000;
-      if(g('mc-steps-incline'))g('mc-steps-incline').value=d.stepsIncline??0;
-      if(g('mc-steigung'))g('mc-steigung').value=d.steigung??0;
-      if(g('mc-saetze'))g('mc-saetze').value=d.saetze??20;
+      if(g('mc-reps'))g('mc-reps').value=d.reps??400;
       if(g('mc-neat'))g('mc-neat').value=d.neat||'mid';
       if(g('mc-kcal-adjust'))g('mc-kcal-adjust').value=d.kcalAdjust??0;
       updateMacroSaveBtn(true);
@@ -5633,9 +5628,7 @@ function saveMacroInputs(){
     gewicht:g('mc-gewicht')?.value||90,
     groesse:g('mc-groesse')?.value||1.84,
     steps:g('mc-steps')?.value||10000,
-    stepsIncline:g('mc-steps-incline')?.value||0,
-    steigung:g('mc-steigung')?.value||0,
-    saetze:g('mc-saetze')?.value||20,
+    reps:g('mc-reps')?.value||400,
     neat:g('mc-neat')?.value||'mid',
     kcalAdjust:g('mc-kcal-adjust')?.value||0
   };
@@ -5647,9 +5640,7 @@ function resetMacroInputs(){
   if(g('mc-gewicht'))g('mc-gewicht').value=90;
   if(g('mc-groesse'))g('mc-groesse').value='1.84';
   if(g('mc-steps'))g('mc-steps').value=10000;
-  if(g('mc-steps-incline'))g('mc-steps-incline').value=0;
-  if(g('mc-steigung'))g('mc-steigung').value=0;
-  if(g('mc-saetze'))g('mc-saetze').value=20;
+  if(g('mc-reps'))g('mc-reps').value=400;
   if(g('mc-neat'))g('mc-neat').value='mid';
   if(g('mc-kcal-adjust'))g('mc-kcal-adjust').value=0;
   if(localStorage.getItem('ironlog_macro_save'))saveMacroInputs();
