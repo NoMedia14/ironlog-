@@ -2682,27 +2682,29 @@ function startCaliWorkout(plan){
     const pct=target?Math.min(100,Math.round(completed/target*100)):0;
     awSetCounters['cali-'+ei]=1;
     return `<div class="exercise-block cali-aw-block" id="cali-aw-ex-${ei}" data-ei="${ei}">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
-        <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--accent4);">${htmlEscape(ex.name)}</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;cursor:pointer;" onclick="toggleCaliAWExercise(${ei})">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--accent4);">${htmlEscape(ex.name)} <span id="cali-aw-ex-arr-${ei}" style="font-size:12px;">▼</span></div>
           <div class="cali-target-badge" id="cali-live-${ei}">${cycle.pending?`Start am ${fmtD(cycle.start,{day:'2-digit',month:'2-digit'})}`:`${remaining} von ${target} Reps offen`}</div>
         </div>
         <button class="btn btn-danger btn-xs" onclick="g('cali-aw-ex-${ei}').remove()" title="Für heute entfernen">✕</button>
       </div>
-      <div class="cali-progress"><div class="cali-progress-fill" id="cali-live-bar-${ei}" style="width:${pct}%"></div></div>
-      <div class="cali-cycle-meta">
-        <span>${completed} erledigt · ${target} Ziel</span>
-        <span>${fmtD(cycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(cycle.end,{day:'2-digit',month:'2-digit'})}</span>
-      </div>
-      <div style="margin-top:12px;" id="cali-sets-${ei}">
-        <div class="cali-rep-row" id="cali-set-${ei}-0">
-          <div class="set-num">1</div>
-          <input type="number" min="0" inputmode="numeric" placeholder="Reps in diesem Satz" id="cali-rp-${ei}-0" ${cycle.pending?'disabled':''} oninput="updateCaliLiveProgress(${ei},${completed},${target})">
-          <button class="del-set" onclick="g('cali-set-${ei}-0').remove();updateCaliLiveProgress(${ei},${completed},${target})">✕</button>
+      <div id="cali-aw-ex-body-${ei}">
+        <div class="cali-progress"><div class="cali-progress-fill" id="cali-live-bar-${ei}" style="width:${pct}%"></div></div>
+        <div class="cali-cycle-meta">
+          <span>${completed} erledigt · ${target} Ziel</span>
+          <span>${fmtD(cycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(cycle.end,{day:'2-digit',month:'2-digit'})}</span>
         </div>
+        <div style="margin-top:12px;" id="cali-sets-${ei}">
+          <div class="cali-rep-row" id="cali-set-${ei}-0">
+            <div class="set-num">1</div>
+            <input type="number" min="0" inputmode="numeric" placeholder="Reps in diesem Satz" id="cali-rp-${ei}-0" ${cycle.pending?'disabled':''} oninput="updateCaliLiveProgress(${ei},${completed},${target})">
+            <button class="del-set" onclick="g('cali-set-${ei}-0').remove();updateCaliLiveProgress(${ei},${completed},${target})">✕</button>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-xs" style="width:100%;" ${cycle.pending?'disabled':''} onclick="addCaliSet(${ei},${completed},${target})">+ Satz</button>
+        <div class="field" style="margin-top:10px;margin-bottom:0;"><label>Bemerkung</label><textarea id="cali-rmk-${ei}" placeholder="Optional…" style="min-height:44px;resize:vertical;font-size:13px;"></textarea></div>
       </div>
-      <button class="btn btn-ghost btn-xs" style="width:100%;" ${cycle.pending?'disabled':''} onclick="addCaliSet(${ei},${completed},${target})">+ Satz</button>
-      <div class="field" style="margin-top:10px;margin-bottom:0;"><label>Bemerkung</label><textarea id="cali-rmk-${ei}" placeholder="Optional…" style="min-height:44px;resize:vertical;font-size:13px;"></textarea></div>
     </div>`;
   }).join('');
   wrap.innerHTML=`<div class="active-workout" style="border-color:rgba(71,255,184,.48);">
@@ -2737,6 +2739,15 @@ function addCaliSet(ei,completed,target){
     <button class="del-set" onclick="g('cali-set-${ei}-${si}').remove();updateCaliLiveProgress(${ei},${completed},${target})">✕</button>`;
   g('cali-sets-'+ei)?.appendChild(row);
   g(`cali-rp-${ei}-${si}`)?.focus();
+}
+
+function toggleCaliAWExercise(ei){
+  const body=g('cali-aw-ex-body-'+ei), arr=g('cali-aw-ex-arr-'+ei), block=g('cali-aw-ex-'+ei);
+  if(!body)return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'';
+  if(arr)arr.textContent=open?'▶':'▼';
+  if(block)block.style.opacity=open?'.62':'1';
 }
 
 function updateCaliLiveProgress(ei,completed,target){
