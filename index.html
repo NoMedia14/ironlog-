@@ -180,6 +180,10 @@
     .cali-plan-row{padding:10px 0;border-top:1px solid var(--border);}
     .cali-plan-row:first-child{border-top:none;}
     .cali-plan-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .cali-plan-summary{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+    .cali-deadline-badge{border:1px solid rgba(232,255,71,.38);background:rgba(232,255,71,.08);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800;color:var(--accent);white-space:nowrap;}
+    .cali-deadline-badge.reached{border-color:rgba(71,255,184,.38);background:rgba(71,255,184,.08);color:var(--accent4);}
+    .cali-deadline-badge.missed{border-color:rgba(255,99,99,.38);background:rgba(255,99,99,.08);color:var(--accent2);}
     .cali-progress{height:6px;background:var(--surface);border-radius:999px;overflow:hidden;margin:7px 0 5px;}
     .cali-progress-fill{height:100%;background:var(--accent4);border-radius:inherit;transition:width .2s ease;}
     .cali-adjust{display:flex;gap:5px;align-items:center;flex-shrink:0;}
@@ -187,7 +191,9 @@
     .cali-workout-summary{padding:12px 14px;margin:0 0 12px;background:rgba(71,255,184,.06);border:1px solid rgba(71,255,184,.18);border-radius:8px;}
     .cali-rep-row{display:grid;grid-template-columns:32px 1fr 34px;gap:8px;align-items:center;margin-bottom:8px;}
     .cali-rep-row input{text-align:center;}
-    .cali-target-badge{font-size:11px;font-weight:800;color:var(--accent4);white-space:nowrap;}
+    .cali-target-badge{font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap;}
+    .cali-target-badge.reached{color:var(--accent4);}
+    .cali-target-badge.missed{color:var(--accent2);}
 
     /* ACTIVE WORKOUT */
     .active-workout{background:var(--card);border:2px solid var(--accent3);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
@@ -646,6 +652,8 @@
       .plan-ex-grid .del-set{grid-column:4;grid-row:1;margin-bottom:2px!important;}
       .cali-plan-top{align-items:flex-start;}
       .cali-adjust{flex-wrap:wrap;justify-content:flex-end;}
+      .cali-plan-card .plan-head{flex-wrap:wrap;}
+      .cali-plan-summary{width:100%;flex-direction:row;align-items:center;justify-content:space-between;}
       .step-week-head{align-items:flex-start;}
       .step-week-total{font-size:36px;}
       .step-week-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -1219,9 +1227,9 @@
     </div>
     <div class="field"><label>Planname</label><input type="text" id="p-name" placeholder="z.B. Push A …"></div>
     <div class="field" id="p-cali-start-wrap" style="display:none;">
-      <label>Erster 7-Tage-Zeitraum ab</label>
+      <label>Erster 7-Tage-Zielblock ab</label>
       <input type="date" id="p-cali-start">
-      <div class="plan-mode-note" style="margin-top:6px;">Das Wochenziel startet an diesem Datum und wird danach automatisch alle 7 Tage zurückgesetzt.</div>
+      <div class="plan-mode-note" style="margin-top:6px;">7 Tage Zielzeitraum · neuer Start alle 8 Tage.</div>
     </div>
     <div class="divider"></div>
     <div id="p-ex-container"></div>
@@ -1625,11 +1633,18 @@ function planMode(plan){ return (plan?.exercises||[]).some(ex=>ex.trainingMode==
 function exerciseTrainingMode(ex){ return ex?.trainingMode==='calisthenics'?'calisthenics':'classic'; }
 function caliCycle(startDate,forDate=today()){
   const start=dateKey(startDate||forDate), current=dateKey(forDate);
-  const startMs=new Date(start+'T12:00:00').getTime(), currentMs=new Date(current+'T12:00:00').getTime();
-  const dayDiff=Math.floor((currentMs-startMs)/86400000);
+  const dayNumber=ds=>{const[y,m,d]=ds.split('-').map(Number);return Date.UTC(y,m-1,d)/86400000;};
+  const dayDiff=Math.round(dayNumber(current)-dayNumber(start));
   if(dayDiff<0) return {start,end:addDays(start,6),index:0,pending:true};
-  const index=Math.floor(dayDiff/7), cycleStart=addDays(start,index*7);
-  return {start:cycleStart,end:addDays(cycleStart,6),index,pending:false};
+  const index=Math.floor(dayDiff/8), cycleStart=addDays(start,index*8), cycleEnd=addDays(cycleStart,6);
+  if(current>cycleEnd){
+    const nextStart=addDays(cycleStart,8);
+    return {
+      start:nextStart,end:addDays(nextStart,6),index:index+1,pending:true,restDay:true,
+      previous:{start:cycleStart,end:cycleEnd,index,pending:false}
+    };
+  }
+  return {start:cycleStart,end:cycleEnd,index,pending:false,restDay:false};
 }
 function caliExerciseConfig(name){
   for(const plan of plans.filter(p=>!p.archived&&planMode(p)==='calisthenics')){
@@ -3248,7 +3263,7 @@ function renderPlans(){
       <button class="fbtn ${planListMode==='classic'?'active':''}" onclick="setPlanListMode('classic')">Klassik</button>
       <button class="fbtn ${planListMode==='calisthenics'?'active':''}" onclick="setPlanListMode('calisthenics')">Calisthenics</button>
     </div>
-    <div class="plan-mode-note">${planListMode==='calisthenics'?'Flexible Ziele je 7-Tage-Zeitraum':'Feste Übungen, Sätze und Wiederholungen'}</div>
+    <div class="plan-mode-note">${planListMode==='calisthenics'?'7-Tage-Zielblöcke · neuer Start alle 8 Tage':'Feste Übungen, Sätze und Wiederholungen'}</div>
   </div>`;
   const modePlans=plans.filter(p=>planMode(p)===planListMode);
   if(!modePlans.length){el.innerHTML=modeBar+`<div class="empty"><div class="empty-icon">📌</div><div class="empty-text">Noch keine ${planListMode==='calisthenics'?'Calisthenics-Ziele':'klassischen Pläne'}.<br>Tippe auf + um einen zu erstellen.</div></div>`;return;}
@@ -3256,23 +3271,38 @@ function renderPlans(){
   const archived=modePlans.filter(p=>p.archived);
   const cardHTML=p=>{
     if(planMode(p)==='calisthenics'){
-      const exRows=(p.exercises||[]).map((ex,i)=>{
+      const statuses=(p.exercises||[]).map((ex,i)=>{
         const target=parseInt(ex.weeklyReps,10)||0, pct=parseFloat(ex.progressionPct)||5;
         const cycle=caliCycle(ex.startDate||today());
-        const done=cycle.pending?0:caliRepsInRange(ex.name,cycle.start,cycle.end);
+        const displayCycle=cycle.restDay&&cycle.previous?cycle.previous:cycle;
+        const done=cycle.pending&&!cycle.restDay?0:caliRepsInRange(ex.name,displayCycle.start,displayCycle.end);
         const remaining=Math.max(0,target-done), progress=target?Math.min(100,done/target*100):0;
+        const reached=target>0&&done>=target;
+        return {ex,i,target,pct,cycle,displayCycle,done,remaining,progress,reached};
+      });
+      const exRows=statuses.map(({ex,i,target,pct,cycle,displayCycle,done,remaining,progress,reached})=>{
+        const stateClass=reached?' reached':cycle.restDay?' missed':'';
+        const stateText=cycle.pending&&!cycle.restDay
+          ? `Start ${fmtD(cycle.start,{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})}`
+          : reached?'✓ Ziel erreicht':cycle.restDay?`${remaining} Reps fehlten`:`${remaining} Reps offen`;
         return `<div class="cali-plan-row">
           <div class="cali-plan-top">
-            <div><strong style="font-size:13px;">${htmlEscape(ex.name)}</strong><div class="cali-target-badge">${cycle.pending?`Start ${fmtD(cycle.start,{day:'2-digit',month:'2-digit',year:'numeric'})}`:`${remaining} Reps offen`}</div></div>
+            <div><strong style="font-size:13px;">${htmlEscape(ex.name)}</strong><div class="cali-target-badge${stateClass}">${stateText}</div></div>
             ${p.archived?'':`<div class="cali-adjust"><button class="btn btn-ghost btn-xs" onclick="adjustCaliWeeklyTarget('${p.id}',${i},-1)">−${pct}%</button><span style="font-size:12px;font-weight:800;min-width:64px;text-align:center;">${target}/Woche</span><button class="btn btn-ghost btn-xs" onclick="adjustCaliWeeklyTarget('${p.id}',${i},1)">+${pct}%</button></div>`}
           </div>
           <div class="cali-progress"><div class="cali-progress-fill" style="width:${progress}%"></div></div>
-          <div class="cali-cycle-meta"><span>${done} von ${target} Reps</span><span>${fmtD(cycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(cycle.end,{day:'2-digit',month:'2-digit'})}</span></div>
+          <div class="cali-cycle-meta"><span>${done} von ${target} Reps</span><span>${fmtD(displayCycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(displayCycle.end,{day:'2-digit',month:'2-digit'})}</span></div>
         </div>`;
       }).join('');
-      const total=(p.exercises||[]).reduce((sum,ex)=>sum+(parseInt(ex.weeklyReps,10)||0),0);
-      return `<div class="plan-card${p.archived?' plan-archived':''}">
-        <div class="plan-head"><div class="plan-name" style="color:var(--accent4);">${htmlEscape(p.name)}${p.archived?'<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px;">ARCHIVIERT</span>':''}</div><div class="plan-set-badge" style="color:var(--accent4);">${total} Reps/Woche</div></div>
+      const total=statuses.reduce((sum,status)=>sum+status.target,0);
+      const allReached=statuses.length>0&&statuses.every(status=>status.reached);
+      const deadlineCycle=statuses[0]?.displayCycle;
+      const missed=statuses.some(status=>status.cycle.restDay&&!status.reached);
+      const deadlineDate=deadlineCycle?fmtD(deadlineCycle.end,{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}):'';
+      const deadlineText=allReached?`✓ Wochenziel erreicht · ${deadlineDate}`:missed?`Ziel beendet · ${deadlineDate}`:`Bis ${deadlineDate}`;
+      const deadlineClass=allReached?' reached':missed?' missed':'';
+      return `<div class="plan-card cali-plan-card${p.archived?' plan-archived':''}">
+        <div class="plan-head"><div class="plan-name" style="color:var(--accent4);">${htmlEscape(p.name)}${p.archived?'<span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:8px;">ARCHIVIERT</span>':''}</div><div class="cali-plan-summary"><div class="cali-deadline-badge${deadlineClass}">${deadlineText}</div><div class="plan-set-badge" style="color:var(--accent4);">${total} Reps/Woche</div></div></div>
         <div>${exRows}</div>
         <div class="plan-actions" style="margin-top:10px;">
           ${!p.archived?`<button class="btn btn-teal btn-sm" onclick="startPlanFromPlans('${p.id}')">▶ Starten</button>`:''}
