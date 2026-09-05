@@ -1239,6 +1239,7 @@
         <div><label>Aufteilen auf</label><div class="cali-days-input"><input type="number" id="p-cali-days" min="1" max="7" step="1" value="4" inputmode="numeric"><span>Tage</span></div></div>
       </div>
       <div class="plan-mode-note" style="margin-top:6px;">7 Tage Zielzeitraum · neuer Start alle 8 Tage.</div>
+      <label style="display:flex;align-items:center;gap:10px;margin-top:14px;letter-spacing:0;text-transform:none;font-size:13px;color:var(--text);"><input type="checkbox" id="p-cali-restart" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--accent);">Beim nächsten Training neu starten</label>
     </div>
     <div class="divider"></div>
     <div id="p-ex-container"></div>
@@ -1640,7 +1641,11 @@ function fmtShort(ds){ return fmtD(ds,{day:'2-digit',month:'short'}); }
 function addDays(ds,days){ const d=new Date(ds+'T12:00:00'); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
 function planMode(plan){ return (plan?.exercises||[]).some(ex=>ex.trainingMode==='calisthenics'||ex.weeklyReps!==undefined)?'calisthenics':'classic'; }
 function exerciseTrainingMode(ex){ return ex?.trainingMode==='calisthenics'?'calisthenics':'classic'; }
-function caliCycle(startDate,forDate=today()){
+function caliToday(){
+  const now=new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+}
+function caliCycle(startDate,forDate=caliToday()){
   const start=dateKey(startDate||forDate), current=dateKey(forDate);
   const dayNumber=ds=>{const[y,m,d]=ds.split('-').map(Number);return Date.UTC(y,m-1,d)/86400000;};
   const dayDiff=Math.round(dayNumber(current)-dayNumber(start));
@@ -1661,6 +1666,13 @@ function caliExerciseConfig(name){
     if(ex)return ex;
   }
   return null;
+}
+function caliPlanCycle(ex){
+  if(ex.restartOnNextTraining){
+    const start=caliToday();
+    return {start,end:addDays(start,6),index:0,pending:true,awaitingTraining:true};
+  }
+  return caliCycle(ex.startDate||caliToday());
 }
 function caliRepsInRange(name,start,end){
   return sessions.filter(s=>dateKey(s.date)>=start&&dateKey(s.date)<=end).reduce((total,s)=>total+(s.exercises||[]).reduce((sum,ex)=>{
@@ -2707,7 +2719,28 @@ function openBlankSession(){
 }
 
 // ── ACTIVE WORKOUT ──
-function startCaliWorkout(plan){
+const caliStartingPlans=new Set();
+async function startCaliWorkout(plan){
+  if(caliStartingPlans.has(plan.id))return;
+  if((plan.exercises||[]).some(ex=>ex.restartOnNextTraining)){
+    caliStartingPlans.add(plan.id);
+    try{
+      const startDate=caliPlanCycle({restartOnNextTraining:true}).start;
+      const exercises=plan.exercises.map(ex=>exerciseTrainingMode(ex)==='calisthenics'
+        ?{...ex,startDate,restartOnNextTraining:false}:ex);
+      setSyncState('syncing');
+      const {error}=await sb.from('plans').update({exercises}).eq('id',plan.id).eq('user_id',currentUser.id);
+      if(error)throw error;
+      plan.exercises=exercises;
+      setSyncState('ok');
+    }catch(error){
+      setSyncState('error');
+      showToast('Neustart konnte nicht gespeichert werden. Bitte erneut starten.',true);
+      return;
+    }finally{
+      caliStartingPlans.delete(plan.id);
+    }
+  }
   awSetCounters={};
   const exercises=(plan.exercises||[]).filter(ex=>exerciseTrainingMode(ex)==='calisthenics');
   const wrap=g('active-workout-wrap');
@@ -2830,7 +2863,7 @@ async function saveCaliWorkout(planId){
   if(!exList.length){showToast('Bitte mindestens eine Wiederholung eintragen.',true);if(btn){btn.disabled=false;btn.textContent='💾 Speichern';}return;}
   setSyncState('syncing');
   const name=g('aw-name')?.value.trim()||plan.name||'Calisthenics';
-  const{error}=await sb.from('sessions').insert({user_id:currentUser.id,date:today(),name,exercises:exList});
+  const{error}=await sb.from('sessions').insert({user_id:currentUser.id,date:caliToday(),name,exercises:exList});
   if(error){showToast('Fehler: '+error.message,true);setSyncState('error');if(btn){btn.disabled=false;btn.textContent='💾 Speichern';}return;}
   await loadAllData();
   wrapUpActiveWorkout();
@@ -3315,7 +3348,7 @@ function renderPlans(){
     if(planMode(p)==='calisthenics'){
       const statuses=(p.exercises||[]).map((ex,i)=>{
         const target=parseInt(ex.weeklyReps,10)||0, pct=parseFloat(ex.progressionPct)||5;
-        const cycle=caliCycle(ex.startDate||today());
+        const cycle=caliPlanCycle(ex);
         const displayCycle=cycle.restDay&&cycle.previous?cycle.previous:cycle;
         const done=cycle.pending&&!cycle.restDay?0:caliRepsInRange(ex.name,displayCycle.start,displayCycle.end);
         const remaining=Math.max(0,target-done), progress=target?Math.min(100,done/target*100):0;
@@ -3328,7 +3361,7 @@ function renderPlans(){
       });
       const exRows=statuses.map(({ex,i,target,pct,cycle,displayCycle,done,remaining,progress,reached,plannedSessions,completedDays,sessionsLeft,nextReps})=>{
         const stateClass=reached?' reached':cycle.restDay?' missed':'';
-        const stateText=cycle.pending&&!cycle.restDay
+        const stateText=cycle.awaitingTraining?'Bereit für den Neustart':cycle.pending&&!cycle.restDay
           ? `Start ${fmtD(cycle.start,{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})}`
           : reached?'✓ Ziel erreicht':cycle.restDay?`${remaining} Reps fehlten`:`${remaining} Reps offen`;
         const recommendation=reached?'Ziel vollständig'
@@ -3342,7 +3375,7 @@ function renderPlans(){
             ${p.archived?'':`<div class="cali-adjust"><button class="btn btn-ghost btn-xs" onclick="adjustCaliWeeklyTarget('${p.id}',${i},-1)">−${pct}%</button><span style="font-size:12px;font-weight:800;min-width:64px;text-align:center;">${target}/Woche</span><button class="btn btn-ghost btn-xs" onclick="adjustCaliWeeklyTarget('${p.id}',${i},1)">+${pct}%</button></div>`}
           </div>
           <div class="cali-progress"><div class="cali-progress-fill" style="width:${progress}%"></div>${caliProgressMarkers(plannedSessions)}</div>
-          <div class="cali-cycle-meta"><span>${done} von ${target} Reps</span><span>${fmtD(displayCycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(displayCycle.end,{day:'2-digit',month:'2-digit'})}</span></div>
+          <div class="cali-cycle-meta"><span>${done} von ${target} Reps</span><span>${cycle.awaitingTraining?'7 Tage ab Trainingsstart':`${fmtD(displayCycle.start,{day:'2-digit',month:'2-digit'})}–${fmtD(displayCycle.end,{day:'2-digit',month:'2-digit'})}`}</span></div>
           <div class="cali-session-recommendation${reached?' reached':''}"><span>${recommendation}</span><span>${completedDays}/${plannedSessions} Tage</span></div>
         </div>`;
       }).join('');
@@ -3351,7 +3384,7 @@ function renderPlans(){
       const deadlineCycle=statuses[0]?.displayCycle;
       const missed=statuses.some(status=>status.cycle.restDay&&!status.reached);
       const deadlineDate=deadlineCycle?fmtD(deadlineCycle.end,{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}):'';
-      const deadlineText=allReached?`✓ Wochenziel erreicht · ${deadlineDate}`:missed?`Ziel beendet · ${deadlineDate}`:`Bis ${deadlineDate}`;
+      const deadlineText=deadlineCycle?.awaitingTraining?'Start beim nächsten Training':allReached?`✓ Wochenziel erreicht · ${deadlineDate}`:missed?`Ziel beendet · ${deadlineDate}`:`Bis ${deadlineDate}`;
       const deadlineClass=allReached?' reached':missed?' missed':'';
       const plannedSessions=statuses[0]?.plannedSessions||4;
       return `<div class="plan-card cali-plan-card${p.archived?' plan-archived':''}">
@@ -3404,6 +3437,7 @@ function openNewPlan(){
   g('p-name').value='';
   g('p-cali-start').value=today();
   g('p-cali-days').value=4;
+  g('p-cali-restart').checked=false;
   g('plan-modal-ttl').textContent='NEUER PLAN';
   setPlanEditorMode(editingPlanMode,false);
   renderPlanExerciseEditor([editingPlanMode==='calisthenics'?{name:'',trainingMode:'calisthenics',weeklyReps:100,progressionPct:5,startDate:today()}:{name:'',defaultSets:3,defaultReps:10}]);
@@ -3416,6 +3450,7 @@ function editPlan(id){
   g('p-name').value=plan.name;
   g('p-cali-start').value=(plan.exercises||[]).find(ex=>ex.startDate)?.startDate||today();
   g('p-cali-days').value=caliCycleSessions((plan.exercises||[]).find(ex=>exerciseTrainingMode(ex)==='calisthenics'));
+  g('p-cali-restart').checked=(plan.exercises||[]).some(ex=>ex.restartOnNextTraining);
   g('plan-modal-ttl').textContent='PLAN BEARBEITEN';
   setPlanEditorMode(editingPlanMode,false);
   renderPlanExerciseEditor(plan.exercises||[]);
@@ -3560,6 +3595,7 @@ async function savePlan(){
   let invalidReps=false;
   const startDate=dateKey(g('p-cali-start')?.value||today());
   const cycleSessions=parseInt(g('p-cali-days')?.value,10)||4;
+  const restartOnNextTraining=g('p-cali-restart').checked;
   if(editingPlanMode==='calisthenics'&&!startDate){alert('Bitte ein Startdatum wählen.');return;}
   if(editingPlanMode==='calisthenics'&&(cycleSessions<1||cycleSessions>7)){alert('Bitte 1 bis 7 Trainingstage eingeben.');return;}
   document.querySelectorAll('[id^="pex-n-"]').forEach(inp=>{
@@ -3570,7 +3606,7 @@ async function savePlan(){
       const weeklyReps=parseInt(g('pex-w-'+id)?.value,10)||0;
       const progressionPct=parseFloat(g('pex-p-'+id)?.value)||5;
       if(weeklyReps<1){invalidReps=true;return;}
-      exercises.push({name:n,trainingMode:'calisthenics',weeklyReps,startDate,progressionPct,cycleSessions});
+      exercises.push({name:n,trainingMode:'calisthenics',weeklyReps,startDate,progressionPct,cycleSessions,restartOnNextTraining});
     }else{
       const s=parseInt(g('pex-s-'+id)?.value)||3;
       const r=(g('pex-r-'+id)?.value||'10').trim().replace(/\s*-\s*/g,'-')||'10';
@@ -3977,7 +4013,7 @@ function updateCaliProgressChart(){
     grouped.set(start,item);
   }));
   if(config){
-    const current=caliCycle(config.startDate||today());
+    const current=caliPlanCycle(config);
     const inFilter=_statsTimeFilter==='all'||filterStatsSessions([{date:current.start}]).length>0;
     if(!current.pending&&inFilter&&!grouped.has(current.start))grouped.set(current.start,{start:current.start,reps:0,target:parseInt(config.weeklyReps,10)||0});
   }
