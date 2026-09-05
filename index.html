@@ -3256,7 +3256,7 @@ async function saveSession(){
   if(!date){alert('Bitte Datum angeben.');return;}
   const exercises=[];
   const originalSession=sessions.find(s=>s.id===_editingSessionId);
-  document.querySelectorAll('#ex-container .exercise-block').forEach((block,index)=>{
+  document.querySelectorAll('#ex-container .exercise-block').forEach(block=>{
     const exId=block.id.replace('ex-','');
     const exName=g('ex-n-'+exId)?.value.trim(); if(!exName)return;
     const remark=g('ex-r-'+exId)?.value.trim()||'';
@@ -3265,9 +3265,9 @@ async function saveSession(){
       const sn=row.id.replace(`sr-${exId}-`,'');
       sets.push({kg:g(`kg-${exId}-${sn}`)?.value||'',reps:g(`rp-${exId}-${sn}`)?.value||''});
     });
-    const originalEx=originalSession?.exercises?.[index];
+    const originalEx=originalSession?.exercises?.[block.dataset.originalIndex];
     const modeMeta=originalEx&&exerciseTrainingMode(originalEx)==='calisthenics'
-      ?{trainingMode:'calisthenics',weeklyTarget:originalEx.weeklyTarget,cycleStart:originalEx.cycleStart}
+      ?{trainingMode:'calisthenics',weeklyTarget:originalEx.weeklyTarget,cycleStart:originalEx.cycleStart,cycleSessions:originalEx.cycleSessions}
       :{trainingMode:'classic'};
     exercises.push({name:exName,sets,remark,...modeMeta});
   });
@@ -3312,9 +3312,10 @@ function editCurrentSession(){
   g('s-date').value=s.date;
   g('s-name').value=s.name||'';
   g('ex-container').innerHTML='';
-  (s.exercises||[]).forEach(ex=>{
+  (s.exercises||[]).forEach((ex,index)=>{
     addExercise(ex.name,0);
     const exId=exCounter;
+    g('ex-'+exId).dataset.originalIndex=index;
     (ex.sets||[]).forEach(st=>{
       addSet(exId);
       const sn=setCounters[exId];
@@ -4000,6 +4001,37 @@ function filterStatsSessions(list){
   const cutStr=cutoff.toISOString().slice(0,10);
   return list.filter(s=>dateKey(s.date)>=cutStr);
 }
+function caliStatsPeriods(exName,config=caliExerciseConfig(exName)){
+  const visible=new Set(visibleSessionsForExercise(exName));
+  const entries=sessionsWithExercise(exName).flatMap(s=>(s.exercises||[])
+    .filter(ex=>ex.name===exName&&exerciseTrainingMode(ex)==='calisthenics')
+    .map(ex=>({session:s,ex,date:dateKey(s.date)})))
+    .sort((a,b)=>a.date.localeCompare(b.date)||String(a.session.id||'').localeCompare(String(b.session.id||'')));
+  const starts=[...new Set(entries.map(({ex})=>dateKey(ex.cycleStart)).filter(Boolean))];
+  const grouped=new Map();
+  entries.forEach(({session,ex,date})=>{
+    // Only historical anchors can assign old sessions; today's plan may have restarted.
+    const matches=ex.cycleStart?[]:starts.filter(start=>date>=start&&date<=addDays(start,6));
+    const savedStart=dateKey(ex.cycleStart)||(matches.length===1?matches[0]:'');
+    const start=savedStart||date;
+    const item=grouped.get(start)||{start,reps:0,target:null,partial:false,uncertain:false,visible:false};
+    item.uncertain ||= !savedStart;
+    if(visible.has(session)){
+      item.visible=true;
+      item.reps+=(ex.sets||[]).reduce((sum,set)=>sum+Math.max(0,parseInt(set.reps,10)||0),0);
+    }else item.partial=true;
+    const target=parseInt(ex.weeklyTarget,10);
+    if(target>0)item.target=target;
+    grouped.set(start,item);
+  });
+  if(config){
+    const current=caliPlanCycle(config);
+    if(!current.pending&&!grouped.has(current.start))grouped.set(current.start,{start:current.start,reps:0,target:parseInt(config.weeklyReps,10)||null,visible:true});
+  }
+  // Select whole periods, so a rolling time filter cannot turn a completed week into a partial one.
+  return [...grouped.values()].filter(p=>p.visible&&filterStatsSessions([{date:p.uncertain?p.start:addDays(p.start,6)}]).length)
+    .sort((a,b)=>a.start.localeCompare(b.start));
+}
 function updateCaliProgressChart(){
   const exName=g('chart-ex-sel').value, tbl=g('stats-last3');
   if(!exName||exName==='Keine Daten'){
@@ -4007,22 +4039,7 @@ function updateCaliProgressChart(){
     if(tbl)tbl.innerHTML='';
     return;
   }
-  const config=caliExerciseConfig(exName);
-  const grouped=new Map();
-  filterStatsSessions(visibleSessionsForExercise(exName)).forEach(s=>(s.exercises||[]).forEach(ex=>{
-    if(ex.name!==exName||exerciseTrainingMode(ex)!=='calisthenics')return;
-    const start=ex.cycleStart||caliCycle(config?.startDate||s.date,s.date).start;
-    const item=grouped.get(start)||{start,reps:0,target:parseInt(ex.weeklyTarget,10)||parseInt(config?.weeklyReps,10)||0};
-    item.reps+=(ex.sets||[]).reduce((sum,set)=>sum+(parseInt(set.reps,10)||0),0);
-    item.target=parseInt(ex.weeklyTarget,10)||item.target;
-    grouped.set(start,item);
-  }));
-  if(config){
-    const current=caliPlanCycle(config);
-    const inFilter=_statsTimeFilter==='all'||filterStatsSessions([{date:current.start}]).length>0;
-    if(!current.pending&&inFilter&&!grouped.has(current.start))grouped.set(current.start,{start:current.start,reps:0,target:parseInt(config.weeklyReps,10)||0});
-  }
-  const pts=[...grouped.values()].sort((a,b)=>a.start.localeCompare(b.start));
+  const pts=caliStatsPeriods(exName);
   if(pChartI)pChartI.destroy();
   pChartI=new Chart(g('progressChart'),{type:'line',data:{
     labels:pts.map(p=>fmtD(p.start,{day:'2-digit',month:'short'})),
@@ -4035,8 +4052,10 @@ function updateCaliProgressChart(){
   const last=pts.slice(-6).reverse();
   if(!last.length){tbl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:12px 0;">Noch keine Calisthenics-Reps gespeichert.</div>';return;}
   const rows=last.map(p=>{
-    const percent=p.target?Math.round(p.reps/p.target*100):0;
-    return `<tr><td>${fmtD(p.start,{day:'2-digit',month:'short'})}</td><td style="text-align:center;font-weight:700;">${p.reps}</td><td style="text-align:center;">${p.target||'—'}</td><td style="text-align:center;color:${percent>=100?'var(--accent4)':'var(--muted)'};">${percent}%</td></tr>`;
+    const reached=p.target>0&&p.reps>=p.target&&!p.partial&&!p.uncertain;
+    const percent=p.target?Math.min(p.reps<p.target?99.9:Infinity,Math.round(p.reps/p.target*1000)/10):null;
+    const result=p.uncertain?'Zeitraum unklar':p.partial?'Teilansicht':percent===null?'Ziel unbekannt':`${percent.toLocaleString('de-DE')}%`;
+    return `<tr><td>${fmtD(p.start,{day:'2-digit',month:'short'})}</td><td style="text-align:center;font-weight:700;">${p.reps}</td><td style="text-align:center;">${p.target||'—'}</td><td style="text-align:center;color:${reached?'var(--accent4)':'var(--muted)'};">${result}</td></tr>`;
   }).join('');
   tbl.innerHTML=`<div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px;letter-spacing:1px;">LETZTE 7-TAGE-ZEITRÄUME</div>
     <table class="bp-table"><thead><tr><th>Start</th><th style="text-align:center;">Reps</th><th style="text-align:center;">Ziel</th><th style="text-align:center;">Erreicht</th></tr></thead><tbody>${rows}</tbody></table>`;
