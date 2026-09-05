@@ -2836,14 +2836,19 @@ function updateCaliLiveProgress(ei,completed,target){
   const plannedSessions=parseInt(block?.dataset.cycleSessions,10)||4;
   const completedDays=parseInt(block?.dataset.completedDays,10)||0;
   const futureSessions=Math.max(0,plannedSessions-completedDays-(todayReps>0?1:0));
+  const sessionTarget=Math.ceil(Math.max(0,target-completed)/Math.max(1,plannedSessions-completedDays));
+  const sessionRemaining=Math.max(0,sessionTarget-todayReps);
   if(label)label.textContent=remaining?`${remaining} von ${target} Reps offen`:`Wochenziel erreicht · ${total} Reps`;
   if(label)label.classList.toggle('reached',remaining===0);
   if(bar)bar.style.width=(target?Math.min(100,total/target*100):0)+'%';
   if(rec){
-    rec.classList.toggle('reached',remaining===0);
+    rec.classList.toggle('reached',sessionRemaining===0);
     if(!remaining)rec.innerHTML='<span>Ziel erreicht</span><span>100%</span>';
-    else if(todayReps>0&&futureSessions>0)rec.innerHTML=`<span>Danach: ${Math.ceil(remaining/futureSessions)} Reps je Session</span><span>${futureSessions} Tag${futureSessions!==1?'e':''} übrig</span>`;
-    else if(todayReps>0)rec.innerHTML=`<span>Nach heute noch ${remaining} Reps offen</span><span>Zusatzsession</span>`;
+    else if(todayReps>0){
+      const current=sessionRemaining?`Heute noch empfohlen: ${sessionRemaining} Reps`:'Empfehlung für heute erreicht';
+      const next=futureSessions>0?`Danach: ${Math.ceil(remaining/futureSessions)} Reps je Session · ${futureSessions} Tag${futureSessions!==1?'e':''} übrig`:'Letzte geplante Session';
+      rec.innerHTML=`<span>${current}</span><span>${next}</span>`;
+    }
     else rec.innerHTML=`<span>Heute empfohlen: ${Math.ceil(remaining/Math.max(1,plannedSessions-completedDays))} Reps</span><span>${Math.max(1,plannedSessions-completedDays)} Tage übrig</span>`;
   }
 }
