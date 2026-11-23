@@ -2,24 +2,28 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0a0a0f">
+  <meta name="theme-color" content="#101112">
   <title>IRONLOG</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400..800&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg:#0a0a0f; --surface:#111118; --card:#18181f; --border:#2a2a38;
+      color-scheme:dark;
+      --bg:#101112; --surface:#151719; --card:#1a1c1e; --border:#333638;
       --accent:#e8ff47; --accent2:#ff4757; --accent3:#47c8ff; --accent4:#47ffb8;
-      --text:#f0f0f8; --muted:#6b6b80; --radius:14px;
+      --text:#f1f2ef; --muted:#a1a6a9; --radius:8px;
+      --app-bar:#101112; --accent-ink:#101112;
     }
     :root.light-mode {
-      --bg:#f0f2f5; --surface:#e4e7ec; --card:#ffffff; --border:#d0d5dd;
-      --accent:#5a7f00; --accent2:#d92d20; --accent3:#0077b6; --accent4:#008060;
-      --text:#101828; --muted:#667085; --radius:14px;
+      color-scheme:light;
+      --bg:#f3f4f2; --surface:#e9ece8; --card:#ffffff; --border:#d5dad5;
+      --accent:#496500; --accent2:#b42328; --accent3:#006c9b; --accent4:#007756;
+      --text:#1a201c; --muted:#535e57;
+      --app-bar:#f8f9f7; --accent-ink:#ffffff;
     }
     :root.light-mode .logo { color: var(--accent); }
     :root.light-mode .logo span { color: var(--text); }
@@ -32,8 +36,6 @@
     :root.light-mode .macro-toggle3.active { background:var(--accent); color:#fff; }
     :root.light-mode .btn-accent { background:var(--accent); color:#fff; }
     :root.light-mode .user-avatar { background:var(--accent); color:#fff; }
-    :root.light-mode header { background:rgba(240,242,245,0.92); }
-    :root.light-mode nav { background:var(--surface); }
     :root.light-mode .fbtn.active { background:var(--accent3); color:#fff; border-color:var(--accent3); }
     :root.light-mode .stat-box { background:var(--card); }
     :root.light-mode .timer-main.t-play { background:var(--accent); color:#fff; }
@@ -403,32 +405,30 @@
     :root{
       --radius-sm:10px;
       --radius-md:14px;
-      --radius-lg:18px;
-      --hairline:rgba(255,255,255,.075);
+      --radius-lg:12px;
+      --hairline:rgba(255,255,255,.11);
       --hover:rgba(255,255,255,.045);
       --pressed:rgba(255,255,255,.07);
       --field-bg:rgba(255,255,255,.025);
       --focus-ring:0 0 0 3px rgba(232,255,71,.12);
-      --shadow-card:0 12px 34px rgba(0,0,0,.20);
-      --shadow-hover:0 16px 42px rgba(0,0,0,.27);
+      --shadow-card:none;
+      --shadow-hover:0 4px 16px rgba(0,0,0,.14);
       --shadow-pop:0 24px 70px rgba(0,0,0,.42);
     }
     :root.light-mode{
-      --hairline:rgba(16,24,40,.09);
+      --hairline:rgba(26,32,28,.14);
       --hover:rgba(16,24,40,.045);
       --pressed:rgba(16,24,40,.07);
       --field-bg:rgba(16,24,40,.018);
       --focus-ring:0 0 0 3px rgba(90,127,0,.13);
-      --shadow-card:0 12px 30px rgba(16,24,40,.08);
-      --shadow-hover:0 16px 40px rgba(16,24,40,.12);
+      --shadow-hover:0 4px 16px rgba(26,32,28,.09);
       --shadow-pop:0 24px 70px rgba(16,24,40,.22);
     }
     html{scroll-behavior:smooth;}
     body{
-      background:linear-gradient(180deg,#0a0a0f 0%,#0d0d14 48%,#09090d 100%);
+      background:var(--bg);
       -webkit-tap-highlight-color:transparent;
     }
-    :root.light-mode body{background:linear-gradient(180deg,#f7f8fb 0%,#eef1f6 100%);}
     header{
       height:64px;
       border-bottom-color:var(--hairline);
@@ -480,14 +480,9 @@
     }
     .btn-sm{min-height:34px;padding:7px 13px;}
     .btn-xs{min-height:30px;padding:5px 10px;}
-    .btn-accent{box-shadow:0 8px 24px rgba(232,255,71,.20);}
-    .btn-blue{box-shadow:0 8px 22px rgba(71,200,255,.10);}
-    .btn-teal{box-shadow:0 8px 22px rgba(71,255,184,.10);}
-    .btn-danger{box-shadow:0 8px 22px rgba(255,71,87,.08);}
-    .fbtn,.qbtn,.rating-btn{background:rgba(255,255,255,.022);}
-    .fbtn.active,.qbtn.qactive,.rating-btn.active{
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 18px rgba(0,0,0,.12);
-    }
+    .btn-accent{box-shadow:none;}
+    .btn-accent:hover{background:color-mix(in srgb,var(--accent) 85%,var(--text));}
+    .fbtn,.qbtn,.rating-btn{background:var(--field-bg);}
 
     input,textarea,select{
       min-height:42px;
@@ -508,10 +503,10 @@
       box-shadow:var(--shadow-card);
     }
     .auth-box,.chart-wrap,.week-compare,.stat-box,.profile-card,.share-card,.data-group{
-      background:linear-gradient(180deg,rgba(255,255,255,.032),rgba(255,255,255,.012)),var(--card);
+      background:var(--card);
     }
     .timer-section,.exercise-block{
-      background:linear-gradient(180deg,rgba(255,255,255,.026),rgba(255,255,255,.008)),var(--surface);
+      background:var(--surface);
     }
     .chart-wrap{padding:18px;margin-bottom:18px;}
     .chart-title{font-size:17px;margin-bottom:14px;}
@@ -670,6 +665,88 @@
       .step-week-metric-val{font-size:20px;}
       .step-week-metric-label{font-size:8px;}
     }
+
+    /* App navigation and training workspace */
+    html{scroll-padding-top:124px;}
+    .icon{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
+    .app-shell{position:sticky;top:0;z-index:100;background:var(--app-bar);border-bottom:1px solid var(--border);}
+    .app-shell > header,.app-shell > nav{max-width:1200px;margin:0 auto;border:0;background:transparent;box-shadow:none;}
+    .app-shell > header{position:static;height:54px;padding:0 20px;backdrop-filter:none;}
+    .app-shell .logo{font-size:30px;letter-spacing:0;line-height:1;}
+    .header-right{gap:8px;}
+    .app-shell .user-badge{font:inherit;color:var(--text);padding:4px 8px;}
+    #theme-btn{display:grid;place-items:center;width:38px;min-height:38px;padding:0;border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;}
+    #theme-btn .icon-sun,.light-mode #theme-btn .icon-moon{display:none;}
+    .light-mode #theme-btn .icon-sun{display:block;}
+    .app-shell > nav{align-items:center;gap:4px;padding:4px 20px 8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+    .app-shell > nav::-webkit-scrollbar{display:block;height:3px;}
+    .app-shell > nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+    .app-shell .tab{
+      flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+      min-height:40px;padding:0 10px;border:1px solid transparent;border-radius:7px;
+      font:700 12px 'DM Sans',sans-serif;letter-spacing:0;
+    }
+    .app-shell .tab .icon{width:16px;height:16px;}
+    .app-shell .tab.active{
+      color:var(--accent);border-color:color-mix(in srgb,var(--accent) 34%,var(--border));
+      background:color-mix(in srgb,var(--accent) 10%,var(--app-bar));box-shadow:none;
+    }
+    button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent3);outline-offset:2px;}
+    main{max-width:948px;padding:24px 20px 112px;}
+    .chart-title,.timer-lbl{font:750 13px/1.35 'DM Sans',sans-serif;letter-spacing:0;color:var(--text);}
+    .chart-wrap,.week-compare,.timer-section,.auth-box,.profile-card{border-radius:var(--radius);}
+    .view canvas{max-width:100%;}
+    .fbtn,.qbtn,.chart-check-toggle{border-radius:7px;letter-spacing:0;box-shadow:none;}
+    .chart-check-toggle input{min-height:0;}
+    .log-tools{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;align-items:start;margin-bottom:22px;}
+    .log-start,.log-tools .timer-section{margin:0;padding:17px;}
+    .log-start{border-top:2px solid var(--accent);background:var(--card);}
+    .log-start-title,.history-title{font-size:21px;line-height:1.2;font-weight:750;}
+    .log-start-title{margin-bottom:14px;}
+    .log-start-row{display:flex;align-items:flex-end;gap:8px;margin-bottom:10px;}
+    .log-start-row .field{flex:1;min-width:0;margin:0;}
+    .log-start-row label{letter-spacing:0;text-transform:none;}
+    .log-start-row .btn{height:42px;padding:0 12px;white-space:nowrap;}
+    .log-blank{width:100%;color:var(--text);}
+    .log-start-row .icon,.log-blank .icon{width:15px;height:15px;}
+    .timer-header{margin-bottom:7px;}
+    .timer-knobs{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+    .timer-display{margin:0;text-align:left;font-size:45px;letter-spacing:0;font-variant-numeric:tabular-nums;}
+    .timer-mini-display{letter-spacing:0;}
+    .timer-btns{justify-content:flex-end;gap:6px;margin:0;}
+    .timer-main{width:40px;height:40px;border-radius:7px;font-size:17px;}
+    .t-play{background:var(--accent);color:var(--accent-ink);box-shadow:none;}
+    .t-play:hover{transform:none;filter:brightness(.91);}
+    .quick-btns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) repeat(4,minmax(0,1fr));gap:5px;}
+    .quick-btns .qbtn{padding:0 2px;min-height:34px;font-size:11px;white-space:nowrap;}
+    .log-history{padding-top:16px;border-top:1px solid var(--border);}
+    .history-title{margin-bottom:6px;}
+    .history-entry{width:100%;border:0;border-bottom:1px solid var(--hairline);background:transparent;color:var(--text);font:inherit;text-align:left;gap:10px;}
+    .history-entry > span{min-width:0;overflow-wrap:anywhere;}
+    .history-entry .data-entry-date{display:block;font-size:14px;}
+    .history-entry .data-entry-vals{gap:4px 10px;font-size:12px;}
+    .history-entry .icon{color:var(--muted);}
+    .history-entry:focus-visible{outline-offset:-2px;}
+    .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+    .stat-box{padding:14px;text-align:left;}
+    .stat-val{color:var(--text);line-height:1.1;letter-spacing:0;text-shadow:none;overflow-wrap:anywhere;}
+    .stat-box:first-child .stat-val{color:var(--accent);}
+    .stat-label{margin-top:4px;letter-spacing:0;overflow-wrap:anywhere;}
+    .stats-mode-switch{max-width:360px;}
+    .progress-chart-frame{position:relative;height:320px;}
+    @media(max-width:720px){
+      .app-shell > header{padding:0 14px;}
+      .app-shell > nav{padding-inline:10px;}
+      .app-shell .tab{gap:5px;padding-inline:9px;}
+      main{padding:16px 12px 104px;}
+      .log-tools{grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:16px;}
+      .log-start,.log-tools .timer-section{padding:13px;}
+      .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .progress-chart-frame{height:226px;}
+    }
+    @media(max-width:350px){
+      .quick-btns{grid-template-columns:repeat(3,minmax(0,1fr));}
+    }
     @media(prefers-reduced-motion:reduce){
       *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important;}
     }
@@ -726,54 +803,85 @@
 </div>
 
 <div id="app-screen">
+  <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0" style="position:absolute;">
+    <symbol id="icon-log" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6m-6 5h6"/></symbol>
+    <symbol id="icon-plans" viewBox="0 0 24 24"><path d="M3 8v8m4-11v14m10-14v14m4-11v8M7 12h10"/></symbol>
+    <symbol id="icon-stats" viewBox="0 0 24 24"><path d="M4 4v16h16M9 15l4-5 3 2 4-6"/></symbol>
+    <symbol id="icon-weight" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 13a5 5 0 0 1 10 0m-5 0 2-3"/></symbol>
+    <symbol id="icon-calories" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-7-1 2-2 3-3 3 1-5-2-8-3-9 0 6-4 8-4 13a7 7 0 0 0 7 7Z"/></symbol>
+    <symbol id="icon-steps" viewBox="0 0 24 24"><path d="M3 20h5v-5h5v-5h5V5h3v15Z"/></symbol>
+    <symbol id="icon-pulse" viewBox="0 0 24 24"><path d="M2 12h5l3-7 4 14 3-7h5"/></symbol>
+    <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20.9 13.3A9 9 0 0 1 10.7 3.1 9 9 0 1 0 20.9 13.3Z"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="icon-mood" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14a5 5 0 0 0 8 0m-7-5h.01m6 0h.01"/></symbol>
+    <symbol id="icon-shared" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2m2-15a3 3 0 0 1 0 6m1 3a4 4 0 0 1 3 4v2"/></symbol>
+    <symbol id="icon-profile" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></symbol>
+    <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7Z"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-next" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  </svg>
+  <div class="app-shell">
   <header>
     <div class="logo">IRON<span>LOG</span></div>
     <div class="header-right">
-      <button onclick="toggleLightMode()" id="theme-btn" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:15px;color:var(--muted);transition:all .2s;" title="Hell/Dunkel">🌙</button>
+      <button onclick="toggleLightMode()" id="theme-btn" title="Helles Design" aria-label="Helles Design" aria-pressed="false"><svg class="icon icon-moon" aria-hidden="true"><use href="#icon-moon"/></svg><svg class="icon icon-sun" aria-hidden="true"><use href="#icon-sun"/></svg></button>
       <span class="sync-dot" id="sync-dot"></span>
-      <div class="user-badge" onclick="showTab('profile',null)">
-        <div class="user-avatar" id="header-avatar">?</div>
-        <div class="user-name" id="header-name">…</div>
-      </div>
+      <button class="user-badge" onclick="showTab('profile',null)" aria-label="Profil">
+        <span class="user-avatar" id="header-avatar">?</span>
+        <span class="user-name" id="header-name">…</span>
+      </button>
     </div>
   </header>
 
-  <!-- NAV: profile+shared rechtsbündig -->
-  <nav>
-    <button class="tab active" data-tab="log" onclick="showTab('log',this)">📋 LOG</button>
-    <button class="tab" data-tab="plans" onclick="showTab('plans',this)">📌 PLÄNE</button>
-    <button class="tab" data-tab="stats" onclick="showTab('stats',this)">📊 STATS</button>
-    <button class="tab" data-tab="weight" onclick="showTab('weight',this)">⚖️ GEWICHT</button>
-    <button class="tab" data-tab="macros" onclick="showTab('macros',this)">🔥 KALORIEN</button>
-    <button class="tab" data-tab="steps" onclick="showTab('steps',this)">👟 SCHRITTE</button>
-    <button class="tab" id="bp-tab" data-tab="bp" onclick="showTab('bp',this)">❤️ BLUTDRUCK</button>
-    <button class="tab" id="sleep-tab" data-tab="sleep" onclick="showTab('sleep',this)">😴 SCHLAF</button>
-    <button class="tab" id="habits-tab" data-tab="habits" onclick="showTab('habits',this)">✅ HABITS</button>
-    <button class="tab" id="mood-tab" data-tab="mood" onclick="showTab('mood',this)">😊 STIMMUNG</button>
+  <nav aria-label="Hauptnavigation">
+    <button class="tab active" data-tab="log" aria-current="page" onclick="showTab('log',this)"><svg class="icon" aria-hidden="true"><use href="#icon-log"/></svg>Log</button>
+    <button class="tab" data-tab="plans" onclick="showTab('plans',this)"><svg class="icon" aria-hidden="true"><use href="#icon-plans"/></svg>Pl&auml;ne</button>
+    <button class="tab" data-tab="stats" onclick="showTab('stats',this)"><svg class="icon" aria-hidden="true"><use href="#icon-stats"/></svg>Stats</button>
+    <button class="tab" data-tab="weight" onclick="showTab('weight',this)"><svg class="icon" aria-hidden="true"><use href="#icon-weight"/></svg>Gewicht</button>
+    <button class="tab" data-tab="macros" onclick="showTab('macros',this)"><svg class="icon" aria-hidden="true"><use href="#icon-calories"/></svg>Kalorien</button>
+    <button class="tab" data-tab="steps" onclick="showTab('steps',this)"><svg class="icon" aria-hidden="true"><use href="#icon-steps"/></svg>Schritte</button>
+    <button class="tab" id="bp-tab" data-tab="bp" onclick="showTab('bp',this)"><svg class="icon" aria-hidden="true"><use href="#icon-pulse"/></svg>Blutdruck</button>
+    <button class="tab" id="sleep-tab" data-tab="sleep" onclick="showTab('sleep',this)"><svg class="icon" aria-hidden="true"><use href="#icon-moon"/></svg>Schlaf</button>
+    <button class="tab" id="habits-tab" data-tab="habits" onclick="showTab('habits',this)"><svg class="icon" aria-hidden="true"><use href="#icon-check"/></svg>Habits</button>
+    <button class="tab" id="mood-tab" data-tab="mood" onclick="showTab('mood',this)"><svg class="icon" aria-hidden="true"><use href="#icon-mood"/></svg>Stimmung</button>
     <div class="nav-spacer"></div>
-    <button class="tab tab-right" data-tab="shared" onclick="showTab('shared',this)">👥 Geteilt</button>
-    <button class="tab tab-right" data-tab="profile" onclick="showTab('profile',this)">👤 Profil</button>
+    <button class="tab tab-right" data-tab="shared" onclick="showTab('shared',this)"><svg class="icon" aria-hidden="true"><use href="#icon-shared"/></svg>Geteilt</button>
+    <button class="tab tab-right" data-tab="profile" onclick="showTab('profile',this)"><svg class="icon" aria-hidden="true"><use href="#icon-profile"/></svg>Profil</button>
   </nav>
+  </div>
 
   <main>
     <!-- LOG -->
     <div id="view-log" class="view active">
+      <div class="log-tools">
+      <section class="chart-wrap log-start" aria-labelledby="log-start-title">
+        <h1 class="log-start-title" id="log-start-title">Training starten</h1>
+        <div class="log-start-row">
+          <div class="field"><label for="log-plan-sel">Trainingsplan</label>
+            <select id="log-plan-sel"><option value="">— Plan wählen —</option></select></div>
+          <button class="btn btn-accent" onclick="startSelectedPlan()"><svg class="icon" aria-hidden="true"><use href="#icon-play"/></svg>Starten</button>
+        </div>
+        <button class="btn btn-ghost btn-sm log-blank" onclick="openBlankSession()"><svg class="icon" aria-hidden="true"><use href="#icon-plus"/></svg>Leere Einheit</button>
+      </section>
       <div class="timer-section" id="timer-section">
         <div class="timer-header">
           <div>
             <div class="timer-lbl">Pausentimer</div>
             <div class="timer-mini-row" id="timer-mini-row" style="display:none;">
               <div class="timer-mini-display" id="timer-mini">00:00</div>
-              <button onclick="timerToggle()" id="timer-mini-btn" style="padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:6px;cursor:pointer;font-size:12px;">▶</button>
+              <button onclick="timerToggle()" id="timer-mini-btn" aria-label="Timer starten oder pausieren" style="padding:3px 8px;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:6px;cursor:pointer;font-size:12px;">▶</button>
             </div>
           </div>
-          <button class="btn btn-ghost btn-xs" onclick="toggleTimerMin()">▲ Min</button>
+          <button class="btn btn-ghost btn-xs timer-collapse" onclick="toggleTimerMin()" aria-controls="timer-body" aria-expanded="true">Einklappen</button>
         </div>
         <div class="timer-body" id="timer-body">
-          <div class="timer-display" id="timer-display">00:00</div>
-          <div class="timer-btns">
-            <button class="timer-main t-reset" onclick="timerReset()">↺</button>
-            <button class="timer-main t-play" id="timer-btn" onclick="timerToggle()">▶</button>
+          <div class="timer-knobs">
+            <div class="timer-display" id="timer-display">00:00</div>
+            <div class="timer-btns">
+              <button class="timer-main t-reset" onclick="timerReset()" aria-label="Timer zur&uuml;cksetzen" title="Timer zur&uuml;cksetzen">↺</button>
+              <button class="timer-main t-play" id="timer-btn" onclick="timerToggle()" aria-label="Timer starten oder pausieren" title="Timer starten oder pausieren">▶</button>
+            </div>
           </div>
           <div class="quick-btns">
             <button class="qbtn" onclick="timerCountdown(60,this)">1 Min</button>
@@ -785,17 +893,12 @@
           </div>
         </div>
       </div>
-      <div class="chart-wrap" style="margin-bottom:16px;">
-        <div class="chart-title" style="margin-bottom:10px;">TRAINING STARTEN</div>
-        <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
-          <div class="field" style="flex:1;margin-bottom:0;"><label>Trainingsplan</label>
-            <select id="log-plan-sel"><option value="">— Plan wählen —</option></select></div>
-          <button class="btn btn-blue" style="height:42px;padding:0 18px;font-size:13px;white-space:nowrap;" onclick="startSelectedPlan()">▶ Starten</button>
-        </div>
-        <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openBlankSession()">+ Leere Einheit</button>
       </div>
       <div id="active-workout-wrap" style="display:none;"></div>
-      <div id="log-list"></div>
+      <section class="log-history" aria-labelledby="log-history-title">
+        <h2 class="history-title" id="log-history-title">Trainingsverlauf</h2>
+        <div id="log-list"></div>
+      </section>
     </div>
 
     <!-- PLANS -->
@@ -831,7 +934,7 @@
             <select id="chart-ex-sel" onchange="updateProgressChart()"></select></div>
           <button class="btn btn-ghost btn-sm" onclick="openExerciseFilter()" style="height:42px;white-space:nowrap;">⚙ Filter</button>
         </div>
-        <canvas id="progressChart" height="200"></canvas>
+        <div class="progress-chart-frame"><canvas id="progressChart" height="200"></canvas></div>
         <div id="stats-last3" style="margin-top:14px;"></div>
       </div>
 
@@ -2476,9 +2579,9 @@ function switchSharedTab(tabId, btn){
         {label:'Diastolisch',data:diaV,borderColor:'#47c8ff',pointRadius:sorted.length>60?1:3,tension:.3,fill:false,order:2},
         {label:'Ø Sys',data:maSys,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true},
         {label:'Ø Dia',data:maDia,borderColor:'#e8ff47',borderWidth:1,borderDash:[3,3],pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
-      ]},options:{plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:10}}},
-        scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-                y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'},
+      ]},options:{plugins:{legend:{display:true,labels:{font:{size:10},boxWidth:10}}},
+        scales:{x:{ticks:{font:{size:10},maxTicksLimit:10}},
+                y:{
                    min:(ctx)=>{const v=ctx.chart.data.datasets.flatMap(d=>d.data).filter(x=>x!=null);return v.length?Math.floor(Math.min(...v)/5)*5-5:60;},
                    max:(ctx)=>{const v=ctx.chart.data.datasets.flatMap(d=>d.data).filter(x=>x!=null);return v.length?Math.ceil(Math.max(...v)/5)*5+5:200;}}}}});
     },50);
@@ -2504,7 +2607,7 @@ function switchSharedTab(tabId, btn){
       window._sharedCharts.sl=new Chart(cv,{type:'line',data:{labels:sorted.map(e=>fmtShort(e.date)),datasets:[
         {label:'Schlafdauer (h)',data:durV,borderColor:'#c847ff',backgroundColor:'rgba(200,71,255,.07)',pointRadius:3,tension:.3,fill:true,order:2},
         {label:'Ø 7 Tage',data:maD,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
-      ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80',callback:v=>v+'h'},grid:{color:'#2a2a38'},min:0}}}});
+      ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},maxTicksLimit:10}},y:{ticks:{callback:v=>v+'h'},min:0}}}});
       // Rating bars
       const rEl=g('shared-sl-rating');if(!rEl)return;
       const EMOJIS={1:{e:'😊',c:'#47ffb8',l:'Gut'},0:{e:'😐',c:'#47c8ff',l:'Neutral'},'-1':{e:'😔',c:'#ff4757',l:'Schlecht'}};
@@ -2543,8 +2646,8 @@ function switchSharedTab(tabId, btn){
         {label:'Stimmung',data:mVals,borderColor:'#ff9f47',pointBackgroundColor:sorted.map(e=>(MOOD_RATINGS[e.rating]||MOOD_RATINGS[0]).color),pointRadius:5,tension:.3,fill:false,order:2},
         {label:'Ø 7 Tage',data:maM,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
       ]},options:{plugins:{legend:{display:false}},
-        scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-                y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-4,max:2}}}});
+        scales:{x:{ticks:{font:{size:10},maxTicksLimit:10}},
+                y:{ticks:{callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},min:-4,max:2}}}});
     },50);
     return;
   }
@@ -2581,7 +2684,7 @@ function updateSharedProgressChart() {
   window._sharedCharts.prog = new Chart(fresh,{type:'line',data:{
     labels:pts.map(d=>fmtShort(d.date)),
     datasets:[{data:pts.map(d=>d.val),borderColor:color,backgroundColor:color+'14',pointBackgroundColor:color,pointRadius:5,tension:.3,fill:true}]
-  },options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  },options:{plugins:{legend:{display:false}}}});
   // Last 3 table
   const tbl=g('shared-last3'); if(!tbl) return;
   const last3=pts.slice(-3).reverse();
@@ -2623,7 +2726,7 @@ function renderSharedWeightChart() {
   window._sharedCharts.w = new Chart(fresh,{type:'line',data:{labels:entries.map(e=>fmtShort(e.date)),datasets:[
     {label:'Gewicht',data:wVals,borderColor:'#47c8ff',backgroundColor:'rgba(71,200,255,.08)',pointRadius:entries.length>60?1:3,tension:.3,fill:true,order:2},
     {label:'Ø 7 Tage',data:maW,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
-  ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},maxTicksLimit:10}}}}});
 }
 
 function renderSharedWeightList() {
@@ -2642,10 +2745,23 @@ function renderSharedWeightList() {
 
 // ── TABS ──
 function showTab(tab,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.remove('active');
+    t.removeAttribute('aria-current');
+  });
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  if(el) el.classList.add('active');
-  else { const t=document.querySelector(`.tab[data-tab="${tab}"]`); if(t) t.classList.add('active'); }
+  const button=el||document.querySelector(`.tab[data-tab="${tab}"]`);
+  if(button){
+    button.classList.add('active');
+    button.setAttribute('aria-current','page');
+    const nav=button.closest('nav');
+    if(nav&&button.offsetWidth){
+      const bounds=nav.getBoundingClientRect(), item=button.getBoundingClientRect();
+      if(item.left<bounds.left||item.right>bounds.right){
+        nav.scrollLeft+=item.left-bounds.left-(nav.clientWidth-item.width)/2;
+      }
+    }
+  }
   g('view-'+tab).classList.add('active');
   activeTab=tab; updateFab();
   if(tab==='log'){renderLog();populateLogPlanSelect();}
@@ -2699,7 +2815,16 @@ function timerReset(){ clearInterval(timerInterval);timerRunning=false;timerSecs
 function timerCountdown(s,btn){ timerReset();timerTarget=s;timerSecs=s;updateTDisp(s);document.querySelectorAll('.qbtn').forEach(b=>b.classList.remove('qactive'));if(btn)btn.classList.add('qactive');timerStart=Date.now();timerRunning=true;setTBtn('⏸');g('timer-display').classList.add('countdown');g('timer-mini').classList.add('countdown');timerInterval=setInterval(timerTick,200); }
 function updateTDisp(s){ const m=Math.floor(Math.abs(s)/60).toString().padStart(2,'0'),sec=(Math.abs(s)%60).toString().padStart(2,'0'),str=m+':'+sec; g('timer-display').textContent=str; g('timer-mini').textContent=str; }
 function setTBtn(t){ g('timer-btn').textContent=t; g('timer-mini-btn').textContent=t; }
-function toggleTimerMin(){ timerMinimized=!timerMinimized; const sec=g('timer-section'),body=g('timer-body'),mr=g('timer-mini-row'),btn=sec.querySelector('.btn-xs'); if(timerMinimized){sec.classList.add('minimized');body.style.display='none';mr.style.display='flex';btn.textContent='▼ Max';}else{sec.classList.remove('minimized');body.style.display='block';mr.style.display='none';btn.textContent='▲ Min';} }
+function toggleTimerMin(){
+  timerMinimized=!timerMinimized;
+  const section=g('timer-section');
+  const button=section.querySelector('.timer-collapse');
+  section.classList.toggle('minimized',timerMinimized);
+  g('timer-body').style.display=timerMinimized?'none':'block';
+  g('timer-mini-row').style.display=timerMinimized?'flex':'none';
+  button.textContent=timerMinimized?'Ausklappen':'Einklappen';
+  button.setAttribute('aria-expanded',String(!timerMinimized));
+}
 
 // ── LOG ──
 function populateLogPlanSelect(){
@@ -3170,10 +3295,10 @@ function renderLog(){
       const entries=[...months[mk]].sort((a,b)=>b.date.localeCompare(a.date));
       const rows=entries.map(s=>{
         const ec=(s.exercises||[]).length,sc=(s.exercises||[]).reduce((a,e)=>a+(e.sets||[]).length,0);
-        return`<div class="data-entry-row" onclick="openDetail('${s.id}')"><div>
-          <div class="data-entry-date">${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short'})}</div>
-          <div class="data-entry-vals"><span>💪 ${ec} Übung${ec!==1?'en':''}</span><span>📋 ${sc} Sets</span><span style="font-size:12px;font-weight:600;">${s.name||'Training'}</span></div>
-        </div><span style="color:var(--muted)">▶</span></div>`;
+        return`<button class="data-entry-row history-entry" onclick="openDetail('${s.id}')"><span>
+          <span class="data-entry-date">${htmlEscape(s.name||'Training')}</span>
+          <span class="data-entry-vals"><span>${fmtD(s.date,{weekday:'short',day:'2-digit',month:'short'})}</span><span>${ec} &Uuml;bung${ec!==1?'en':''}</span><span>${sc} S&auml;tze</span></span>
+        </span><svg class="icon" aria-hidden="true"><use href="#icon-next"/></svg></button>`;
       }).join('');
       const isFirst=(yr===yearKeys[0]&&mi===0);
       return`<div class="data-group"><div class="data-group-header" onclick="toggleGroup('${gIdx}')"><div><div class="data-group-title" style="color:var(--accent3);">${monthLabel(mk)}</div><div class="data-group-meta">${entries.length} Einheiten</div></div><div id="${gIdx}-arr">${isFirst?GROUP_ARROW_OPEN:GROUP_ARROW_CLOSED}</div></div><div class="data-group-body${isFirst?' open':''}" id="${gIdx}">${rows}</div></div>`;
@@ -3952,13 +4077,13 @@ function updateProgressChart(){
     }
   }));
   if(pChartI) pChartI.destroy();
-  const color = _statMode==='kg'?'#e8ff47':'#47c8ff';
+  const color = _statMode==='kg'?chartAccent:chartBlue;
   const colorBg = _statMode==='kg'?'rgba(232,255,71,.08)':'rgba(71,200,255,.08)';
   const label = _statMode==='kg'?'Max kg':'Volumen (kg×Reps)';
   pChartI=new Chart(g('progressChart'),{type:'line',data:{
     labels:pts.map(d=>fmtShort(d.date)),
     datasets:[{label,data:pts.map(d=>d.val),borderColor:color,backgroundColor:colorBg,pointBackgroundColor:color,pointRadius:5,tension:.3,fill:true}]
-  },options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  },options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
 
   // ── Last 3 sessions table ──
   const last3 = pts.slice(-3).reverse();
@@ -4044,9 +4169,9 @@ function updateCaliProgressChart(){
   pChartI=new Chart(g('progressChart'),{type:'line',data:{
     labels:pts.map(p=>fmtD(p.start,{day:'2-digit',month:'short'})),
     datasets:[
-      {label:'Reps',data:pts.map(p=>p.reps),borderColor:'#47ffb8',backgroundColor:'rgba(71,255,184,.08)',pointBackgroundColor:'#47ffb8',pointRadius:5,tension:0,fill:true}
+      {label:'Reps',data:pts.map(p=>p.reps),borderColor:chartGreen,backgroundColor:'rgba(71,255,184,.08)',pointBackgroundColor:chartGreen,pointRadius:5,tension:0,fill:true}
     ]
-  },options:{plugins:{legend:{display:true,labels:{color:'#8a8aa0',boxWidth:10,boxHeight:10}}},scales:{x:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}},y:{beginAtZero:true,ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  },options:{maintainAspectRatio:false,plugins:{legend:{display:true,labels:{boxWidth:10,boxHeight:10}}},scales:{y:{beginAtZero:true}}}});
   if(!tbl)return;
   const last=pts.slice(-6).reverse();
   if(!last.length){tbl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:12px 0;">Noch keine Calisthenics-Reps gespeichert.</div>';return;}
@@ -4061,7 +4186,7 @@ function renderWeekChart(){
   const wc={}; sessions.forEach(s=>{const w=weekLabel(s.date);wc[w]=(wc[w]||0)+1;});
   const labels=Object.keys(wc).sort().slice(-12);
   if(wkChartI) wkChartI.destroy();
-  wkChartI=new Chart(g('weekChart'),{type:'bar',data:{labels,datasets:[{data:labels.map(l=>wc[l]),backgroundColor:'rgba(232,255,71,.2)',borderColor:'#e8ff47',borderWidth:2,borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10}},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80',stepSize:1},grid:{color:'#2a2a38'}}}}});
+  wkChartI=new Chart(g('weekChart'),{type:'bar',data:{labels,datasets:[{data:labels.map(l=>wc[l]),backgroundColor:'rgba(232,255,71,.2)',borderColor:'#e8ff47',borderWidth:2,borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{stepSize:1}}}}});
 }
 
 // ── WEIGHT ──
@@ -4163,7 +4288,7 @@ function renderWeightChart(){
 
   const m=currentWMetric;
   const lmap={weight:'Gewicht (kg)',bauch:'Bauchumfang (cm)',hueft:'Hüftumfang (cm)',kcal:'Kalorien (kcal)',steps:'Schritte'};
-  const colors={weight:'#47c8ff',bauch:'#47ffb8',hueft:'#c847ff',kcal:'#ff9f47',steps:'#47ffb8'};
+  const colors={weight:chartBlue,bauch:chartGreen,hueft:chartPurple,kcal:chartOrange,steps:chartGreen};
   const bgRgb={weight:'71,200,255',bauch:'71,255,184',hueft:'200,71,255',kcal:'255,159,71',steps:'71,255,184'};
   let pts=[];
   if(m==='steps'){
@@ -4174,14 +4299,14 @@ function renderWeightChart(){
     pts=filtered.filter(e=>e[m]).map(e=>({date:e.date,val:parseFloat(e[m])})).sort((a,b)=>a.date.localeCompare(b.date));
   }
   const maVals = calcMA(pts.map(p=>p.val),7);
-  const col=colors[m]||'#47c8ff';
+  const col=colors[m]||chartBlue;
   const datasets=[
-    {label:'Trend Ø 7 Tage',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[],order:1,spanGaps:true}
+    {label:'Trend Ø 7 Tage',data:maVals,borderColor:chartAccent,borderWidth:2,pointRadius:0,tension:.4,fill:false,borderDash:[],order:1,spanGaps:true}
   ];
   if(showWeightRaw){
     datasets.unshift({label:lmap[m],data:pts.map(p=>p.val),borderColor:col,backgroundColor:`rgba(${bgRgb[m]||'71,200,255'},.08)`,pointBackgroundColor:col,pointRadius:pts.length>60?2:4,tension:.3,fill:true,order:2});
   }
-  wtChartI=new Chart(g('weightChart'),{type:'line',data:{labels:pts.map(p=>fmtShort(p.date)),datasets},options:{plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Trend')}}},scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'}}}}});
+  wtChartI=new Chart(g('weightChart'),{type:'line',data:{labels:pts.map(p=>fmtShort(p.date)),datasets},options:{plugins:{legend:{display:true,labels:{font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Trend')}}},scales:{x:{ticks:{font:{size:10},maxTicksLimit:10}}}}});
 }
 
 let korrelationChartI = null;
@@ -4230,10 +4355,10 @@ function renderKorrelationChart(){
   const kData=enoughForTrend(kRaw)?calcMA(kRaw,7):kRaw;
   const sData=enoughForTrend(sRaw)?calcMA(sRaw,7):sRaw;
   const datasets=[
-    {label:enoughForTrend(wVals)?'Ø Gewicht':'Gewicht',data:wData,borderColor:'#47c8ff',borderWidth:2.5,pointRadius:enoughForTrend(wVals)?0:3,tension:.4,fill:false,order:3,yAxisID:'yW',spanGaps:true}
+    {label:enoughForTrend(wVals)?'Ø Gewicht':'Gewicht',data:wData,borderColor:chartBlue,backgroundColor:chartBlue,borderWidth:2.5,pointRadius:enoughForTrend(wVals)?0:3,tension:.4,fill:false,order:3,yAxisID:'yW',spanGaps:true}
   ];
-  if(hasK) datasets.push({label:enoughForTrend(kRaw)?'Ø Kalorien':'Kalorien',data:kData,borderColor:'#ff9f47',borderWidth:2.5,pointRadius:enoughForTrend(kRaw)?0:3,tension:.4,fill:false,order:2,yAxisID:'yK',spanGaps:true});
-  if(hasS) datasets.push({label:enoughForTrend(sRaw)?'Ø Schritte':'Schritte',data:sData,borderColor:'#47ffb8',backgroundColor:'#47ffb8',borderWidth:3,pointRadius:enoughForTrend(sRaw)?0:4,pointHoverRadius:6,pointBackgroundColor:'#47ffb8',pointBorderColor:'#47ffb8',tension:.25,fill:false,order:1,yAxisID:'yS',spanGaps:true,clip:false});
+  if(hasK) datasets.push({label:enoughForTrend(kRaw)?'Ø Kalorien':'Kalorien',data:kData,borderColor:chartOrange,backgroundColor:chartOrange,borderWidth:2.5,pointRadius:enoughForTrend(kRaw)?0:3,tension:.4,fill:false,order:2,yAxisID:'yK',spanGaps:true});
+  if(hasS) datasets.push({label:enoughForTrend(sRaw)?'Ø Schritte':'Schritte',data:sData,borderColor:chartGreen,backgroundColor:chartGreen,borderWidth:3,pointRadius:enoughForTrend(sRaw)?0:4,pointHoverRadius:6,pointBackgroundColor:chartGreen,pointBorderColor:chartGreen,tension:.25,fill:false,order:1,yAxisID:'yS',spanGaps:true,clip:false});
   if(showWeightRaw) datasets.push({label:'Gewicht (kg)',data:wVals,borderColor:'rgba(71,200,255,0.2)',backgroundColor:'rgba(71,200,255,.04)',pointRadius:0,tension:.3,fill:true,order:4,yAxisID:'yW'});
 
   korrelationChartI=new Chart(fresh,{
@@ -4243,12 +4368,12 @@ function renderKorrelationChart(){
       datasets
     },
     options:{
-      plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:6,boxHeight:6,usePointStyle:true,pointStyle:'circle'}}},
+      plugins:{legend:{display:true,labels:{font:{size:10},boxWidth:6,boxHeight:6,usePointStyle:true,pointStyle:'circle'}}},
       scales:{
-        x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-        yW:{position:'left',ticks:{color:'#47c8ff',font:{size:10}},grid:{color:'#2a2a38'},title:{display:true,text:'kg',color:'#47c8ff',font:{size:10}}},
-        yK:{position:'right',display:hasK,ticks:{color:'#ff9f47',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'kcal',color:'#ff9f47',font:{size:10}}},
-        yS:{position:'right',display:hasS,offset:true,ticks:{color:'#47ffb8',font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'Schritte',color:'#47ffb8',font:{size:10}}}
+        x:{ticks:{font:{size:10},maxTicksLimit:10}},
+        yW:{position:'left',ticks:{color:chartBlue,font:{size:10}},title:{display:true,text:'kg',color:chartBlue,font:{size:10}}},
+        yK:{position:'right',display:hasK,ticks:{color:chartOrange,font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'kcal',color:chartOrange,font:{size:10}}},
+        yS:{position:'right',display:hasS,offset:true,ticks:{color:chartGreen,font:{size:10}},grid:{drawOnChartArea:false},title:{display:true,text:'Schritte',color:chartGreen,font:{size:10}}}
       }
     }
   });
@@ -4567,10 +4692,10 @@ function renderBPChart(){
     datasets.push({label:'Trend Dia',data:maDia,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true});
   }
   bpChartI=new Chart(canvas,{type:'line',data:{labels,datasets},options:{
-    plugins:{legend:{display:currentBPView==='both',labels:{color:'#6b6b80',font:{size:10},boxWidth:12,
+    plugins:{legend:{display:currentBPView==='both',labels:{font:{size:10},boxWidth:12,
       filter:item=>item.text==='Systolisch'||item.text==='Diastolisch'}}},
-    scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10,maxRotation:45},grid:{color:'#2a2a38'}},
-            y:{ticks:{color:'#6b6b80'},grid:{color:'#2a2a38'},
+    scales:{x:{ticks:{font:{size:10},maxTicksLimit:10,maxRotation:45}},
+            y:{
                min:(ctx)=>{const v=ctx.chart.data.datasets.flatMap(d=>d.data).filter(x=>x!=null);return v.length?Math.floor(Math.min(...v)/5)*5-5:60;},
                max:(ctx)=>{const v=ctx.chart.data.datasets.flatMap(d=>d.data).filter(x=>x!=null);return v.length?Math.ceil(Math.max(...v)/5)*5+5:200;}}}
   }});
@@ -5261,9 +5386,9 @@ function renderSleepChart(){
       {label:'Ø 7 Tage',data:maDur,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
     ]
   },options:{
-    plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Ø')}}},
-    scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-            y:{ticks:{color:'#6b6b80',callback:v=>v+'h'},grid:{color:'#2a2a38'},min:0}}
+    plugins:{legend:{display:true,labels:{font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Ø')}}},
+    scales:{x:{ticks:{font:{size:10},maxTicksLimit:10}},
+            y:{ticks:{callback:v=>v+'h'},min:0}}
   }});
 }
 
@@ -5518,9 +5643,9 @@ function renderMoodChart(){
       {label:'Ø 7 Tage',type:'line',data:maVals,borderColor:'#e8ff47',borderWidth:2,pointRadius:0,tension:.4,fill:false,order:1,spanGaps:true}
     ]
   },options:{
-    plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Ø')}}},
-    scales:{x:{ticks:{color:'#6b6b80',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2a38'}},
-            y:{ticks:{color:'#6b6b80',callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},grid:{color:'#2a2a38'},min:-4,max:2}}
+    plugins:{legend:{display:true,labels:{font:{size:10},boxWidth:12,filter:item=>item.text&&item.text.includes('Ø')}}},
+    scales:{x:{ticks:{font:{size:10},maxTicksLimit:10}},
+            y:{ticks:{callback:v=>{const r=MOOD_RATINGS[v];return r?r.emoji:'';},stepSize:1},min:-4,max:2}}
   }});
 }
 
@@ -5636,18 +5761,35 @@ function _doExportMoodPDF(mode){
 
 // ═══════════════════════════════════════════════════════════
 // ── THEME ──
+const lightThemeActive=()=>document.documentElement.classList.contains('light-mode');
+const chartAccent=()=>lightThemeActive()?'#496500':'#e8ff47';
+const chartBlue=()=>lightThemeActive()?'#006c9b':'#47c8ff';
+const chartGreen=()=>lightThemeActive()?'#007756':'#47ffb8';
+const chartPurple=()=>lightThemeActive()?'#8424ad':'#c847ff';
+const chartOrange=()=>lightThemeActive()?'#a44a07':'#ff9f47';
+const chartText=()=>Chart.defaults.color;
+const chartGrid=()=>Chart.defaults.borderColor;
 function toggleLightMode(){
-  const isLight = document.documentElement.classList.toggle('light-mode');
+  const isLight = !lightThemeActive();
   localStorage.setItem('ironlog_theme', isLight?'light':'dark');
-  const btn = g('theme-btn');
-  if(btn) btn.textContent = isLight ? '☀️' : '🌙';
+  applyTheme(isLight);
 }
 function loadTheme(){
-  const t = localStorage.getItem('ironlog_theme');
-  if(t==='light'){
-    document.documentElement.classList.add('light-mode');
-    const btn = g('theme-btn');
-    if(btn) btn.textContent = '☀️';
+  applyTheme(localStorage.getItem('ironlog_theme')==='light');
+}
+function applyTheme(isLight){
+  document.documentElement.classList.toggle('light-mode',isLight);
+  g('theme-btn')?.setAttribute('aria-pressed',String(isLight));
+  document.querySelector('meta[name="theme-color"]').content=isLight?'#f8f9f7':'#101112';
+  if(typeof Chart!=='undefined'){
+    const theme=getComputedStyle(document.documentElement);
+    Chart.defaults.color=theme.getPropertyValue('--muted').trim();
+    Chart.defaults.borderColor=theme.getPropertyValue('--hairline').trim();
+    Chart.defaults.font.family="'DM Sans', sans-serif";
+    Chart.defaults.scale.ticks.color=chartText;
+    Chart.defaults.scale.grid.color=chartGrid;
+    Chart.defaults.plugins.legend.labels.color=chartText;
+    Object.values(Chart.instances).forEach(chart=>chart.update('none'));
   }
 }
 
@@ -6012,8 +6154,8 @@ function renderHabitChart() {
     options: {
       plugins: { legend: { display: true, labels: { color:'#6b6b80', font:{size:10}, boxWidth:10 } } },
       scales: {
-        x: { ticks:{color:'#6b6b80',font:{size:9},maxTicksLimit:10}, grid:{color:'#2a2a38'} },
-        y: { ticks:{color:'#6b6b80',callback:v=>v+'%'}, grid:{color:'#2a2a38'}, min:0, max:100 }
+        x: { ticks:{font:{size:9},maxTicksLimit:10} },
+        y: { ticks:{callback:v=>v+'%'}, min:0, max:100 }
       }
     }
   });
